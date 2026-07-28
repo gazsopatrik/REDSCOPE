@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.models.host import Host
 from app.models.scan import Scan, ScanProfile, ScanStatus
 from app.models.service import Service
@@ -23,13 +24,20 @@ class ScanService:
     @staticmethod
     async def get_scans_by_project(db: AsyncSession, project_id: str) -> List[Scan]:
         result = await db.execute(
-            select(Scan).where(Scan.project_id == project_id).order_by(Scan.created_at.desc())
+            select(Scan)
+            .options(selectinload(Scan.hosts).selectinload(Host.services))
+            .where(Scan.project_id == project_id)
+            .order_by(Scan.created_at.desc())
         )
         return list(result.scalars().all())
 
     @staticmethod
     async def get_scan_by_id(db: AsyncSession, scan_id: str) -> Optional[Scan]:
-        result = await db.execute(select(Scan).where(Scan.id == scan_id))
+        result = await db.execute(
+            select(Scan)
+            .options(selectinload(Scan.hosts).selectinload(Host.services))
+            .where(Scan.id == scan_id)
+        )
         return result.scalar_one_or_none()
 
     @staticmethod
@@ -98,7 +106,6 @@ class ScanService:
             scan.status = ScanStatus.FAILED
             scan.error_message = stderr_str or "Nmap scan process failed with non-zero exit code."
             await db.commit()
-            await db.refresh(scan)
 
             await AuditService.log_event(
                 db=db,
@@ -109,7 +116,8 @@ class ScanService:
                 project_id=project_id,
                 details={"error": scan.error_message},
             )
-            return scan
+            res = await ScanService.get_scan_by_id(db, scan.id)
+            return res if res else scan
 
         # 5. Parse XML Output & Save Discovered Hosts/Services
         scan.status = ScanStatus.PARSING
@@ -151,7 +159,6 @@ class ScanService:
             target.last_scanned_at = datetime.now(timezone.utc)
             scan.status = ScanStatus.COMPLETED
             await db.commit()
-            await db.refresh(scan)
 
             await AuditService.log_event(
                 db=db,
@@ -162,11 +169,12 @@ class ScanService:
                 project_id=project_id,
                 details={"hosts_found": len(parsed_result.hosts)},
             )
-            return scan
+            res = await ScanService.get_scan_by_id(db, scan.id)
+            return res if res else scan
 
         except Exception as parse_err:
             scan.status = ScanStatus.FAILED
             scan.error_message = f"XML parsing error: {str(parse_err)}"
             await db.commit()
-            await db.refresh(scan)
-            return scan
+            res = await ScanService.get_scan_by_id(db, scan.id)
+            return res if res else scan
