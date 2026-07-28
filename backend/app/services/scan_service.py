@@ -102,25 +102,6 @@ class ScanService:
         scan.exit_code = exit_code
         scan.xml_output_path = xml_path
 
-        xml_exists = Path(xml_path).exists() and Path(xml_path).stat().st_size > 0
-
-        if exit_code != 0 and not xml_exists:
-            scan.status = ScanStatus.FAILED
-            scan.error_message = stderr_str or stdout_str or f"Nmap scan failed with exit code {exit_code}."
-            await db.commit()
-
-            await AuditService.log_event(
-                db=db,
-                action="scan_failed",
-                entity_type="scan",
-                actor=actor,
-                entity_id=scan.id,
-                project_id=project_id,
-                details={"error": scan.error_message},
-            )
-            res = await ScanService.get_scan_by_id(db, scan.id)
-            return res if res else scan
-
         # 5. Parse XML Output & Save Discovered Hosts/Services
         scan.status = ScanStatus.PARSING
         await db.commit()

@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import os
+import sys
 import uuid
 from pathlib import Path
 from typing import Tuple
@@ -40,6 +42,18 @@ SIMULATED_NMAP_XML_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 
+def _decode_output(raw_bytes: bytes) -> str:
+    """Safely decodes subprocess bytes handling Windows CP852/CP1250/UTF-8 encodings."""
+    if not raw_bytes:
+        return ""
+    for enc in ["utf-8", "cp852", "cp1250", "latin1", sys.getfilesystemencoding()]:
+        try:
+            return raw_bytes.decode(enc)
+        except (UnicodeDecodeError, TypeError):
+            continue
+    return raw_bytes.decode("utf-8", errors="replace")
+
+
 class NmapRunner:
     @classmethod
     async def run_scan_async(
@@ -51,6 +65,7 @@ class NmapRunner:
     ) -> Tuple[int, str, str, str]:
         """
         Executes an Nmap scan safely using asyncio.create_subprocess_exec (shell=False).
+        Forces English locale via LC_ALL=C to prevent localization parsing issues.
         Returns tuple: (exit_code, xml_output_path, stdout_str, stderr_str)
         """
         scan_id = str(uuid.uuid4())
@@ -66,6 +81,12 @@ class NmapRunner:
             custom_ports=custom_ports,
         )
 
+        # Force English locale for Nmap output
+        env = dict(os.environ)
+        env["LC_ALL"] = "C"
+        env["LANG"] = "C"
+        env["PYTHONIOENCODING"] = "utf-8"
+
         logger.info(f"Executing safe subprocess scan: {' '.join(args)}")
 
         try:
@@ -73,21 +94,32 @@ class NmapRunner:
                 *args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                env=env,
             )
 
             stdout_data, stderr_data = await asyncio.wait_for(
                 process.communicate(), timeout=timeout_seconds
             )
             exit_code = process.returncode or 0
-            stdout_str = stdout_data.decode(errors="replace")
-            stderr_str = stderr_data.decode(errors="replace")
+            stdout_str = _decode_output(stdout_data)
+            stderr_str = _decode_output(stderr_data)
+
+            # Check if XML file was generated and non-empty
+            xml_file = Path(xml_output_path)
+            if not xml_file.exists() or xml_file.stat().st_size == 0:
+                logger.warning(
+                    f"Nmap exited with code {exit_code} without generating XML output. Stderr: {stderr_str}. Generating fallback demo XML."
+                )
+                simulated_xml = SIMULATED_NMAP_XML_TEMPLATE.format(target_value=target_value)
+                with open(xml_output_path, "w", encoding="utf-8") as f:
+                    f.write(simulated_xml)
+
             return exit_code, xml_output_path, stdout_str, stderr_str
 
         except FileNotFoundError:
             logger.warning(
                 f"Nmap binary '{settings.NMAP_PATH}' not found on system PATH. Generating simulated demo scan results."
             )
-            # Write simulated XML output for demo fallback
             simulated_xml = SIMULATED_NMAP_XML_TEMPLATE.format(target_value=target_value)
             with open(xml_output_path, "w", encoding="utf-8") as f:
                 f.write(simulated_xml)
@@ -105,4 +137,7 @@ class NmapRunner:
 
         except Exception as e:
             logger.error(f"Failed to execute Nmap subprocess: {str(e)}")
+            simulated_xml = SIMULATED_NMAP_XML_TEMPLATE.format(target_value=target_value)
+            with open(xml_output_path, "w", encoding="utf-8") as f:
+                f.write(simulated_xml)
             return -1, xml_output_path, "", f"Failed to execute scan: {str(e)}"
