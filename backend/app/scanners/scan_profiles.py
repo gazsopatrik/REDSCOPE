@@ -1,3 +1,4 @@
+import shutil
 from typing import List, Optional
 from app.models.scan import ScanProfile
 from app.security.command_policy import CommandPolicy
@@ -14,9 +15,10 @@ class ScanProfileBuilder:
     ) -> List[str]:
         """
         Builds a safe, structured parameter list for Nmap invocation.
-        Uses unprivileged-compatible flags (-Pn, -sV) so scans succeed without requiring administrator/root privileges.
+        Resolves executable path using shutil.which for Windows compatibility.
         """
-        base_args = [nmap_bin, "-Pn", "-oX", xml_output_path, "--open", "-T3"]
+        resolved_bin = shutil.which(nmap_bin) or nmap_bin
+        base_args = [resolved_bin, "-Pn", "-oX", xml_output_path, "--open", "-T3"]
 
         if profile == ScanProfile.QUICK_DISCOVERY:
             # Fast ping & top 100 ports

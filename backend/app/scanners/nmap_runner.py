@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import shutil
 import sys
 import uuid
 from pathlib import Path
@@ -72,12 +73,15 @@ class NmapRunner:
         settings.SCANS_DIR.mkdir(parents=True, exist_ok=True)
         xml_output_path = str(settings.SCANS_DIR / f"scan_{scan_id}.xml")
 
+        # Resolve binary path
+        resolved_bin = shutil.which(settings.NMAP_PATH) or settings.NMAP_PATH
+
         # Build structured parameter list
         args = ScanProfileBuilder.build_nmap_args(
             profile=profile,
             target_value=target_value,
             xml_output_path=xml_output_path,
-            nmap_bin=settings.NMAP_PATH,
+            nmap_bin=resolved_bin,
             custom_ports=custom_ports,
         )
 
@@ -87,7 +91,7 @@ class NmapRunner:
         env["LANG"] = "C"
         env["PYTHONIOENCODING"] = "utf-8"
 
-        logger.info(f"Executing safe subprocess scan: {' '.join(args)}")
+        logger.info(f"Executing real subprocess Nmap scan: {' '.join(args)}")
 
         try:
             process = await asyncio.create_subprocess_exec(
@@ -104,21 +108,11 @@ class NmapRunner:
             stdout_str = _decode_output(stdout_data)
             stderr_str = _decode_output(stderr_data)
 
-            # Check if XML file was generated and non-empty
-            xml_file = Path(xml_output_path)
-            if not xml_file.exists() or xml_file.stat().st_size == 0:
-                logger.warning(
-                    f"Nmap exited with code {exit_code} without generating XML output. Stderr: {stderr_str}. Generating fallback demo XML."
-                )
-                simulated_xml = SIMULATED_NMAP_XML_TEMPLATE.format(target_value=target_value)
-                with open(xml_output_path, "w", encoding="utf-8") as f:
-                    f.write(simulated_xml)
-
             return exit_code, xml_output_path, stdout_str, stderr_str
 
         except FileNotFoundError:
             logger.warning(
-                f"Nmap binary '{settings.NMAP_PATH}' not found on system PATH. Generating simulated demo scan results."
+                f"Nmap binary '{settings.NMAP_PATH}' not found. Generating simulated demo scan results."
             )
             simulated_xml = SIMULATED_NMAP_XML_TEMPLATE.format(target_value=target_value)
             with open(xml_output_path, "w", encoding="utf-8") as f:
@@ -137,7 +131,4 @@ class NmapRunner:
 
         except Exception as e:
             logger.error(f"Failed to execute Nmap subprocess: {str(e)}")
-            simulated_xml = SIMULATED_NMAP_XML_TEMPLATE.format(target_value=target_value)
-            with open(xml_output_path, "w", encoding="utf-8") as f:
-                f.write(simulated_xml)
             return -1, xml_output_path, "", f"Failed to execute scan: {str(e)}"
