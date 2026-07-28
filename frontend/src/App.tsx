@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Shield, LayoutDashboard, Target, Activity, AlertTriangle, CheckSquare, FileText, Settings, ScrollText } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard';
+import { ProjectsPage } from './pages/Projects';
+import { TargetsPage } from './pages/Targets';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -67,6 +69,8 @@ export const App: React.FC = () => {
           </header>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/targets" element={<TargetsPage />} />
             <Route path="*" element={<Dashboard />} />
           </Routes>
         </main>
