@@ -2,15 +2,21 @@
 """
 RedScope Demo Lab Data Seeder
 Populates database with sample authorized projects, scopes, targets, scans, and findings for local testing.
+Idempotent script: Safe to run multiple times without UNIQUE constraint errors.
 """
 
 import asyncio
+import logging
 import sys
 from pathlib import Path
+
+# Silence verbose engine logging during seeding
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 # Ensure backend package is importable
 sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
 
+from sqlalchemy import select
 from app.database import AsyncSessionLocal, Base, engine
 from app.models import (
     AuditLog,
@@ -41,6 +47,15 @@ async def seed_data():
         await conn.run_sync(Base.metadata.create_all)
 
     async with AsyncSessionLocal() as session:
+        # Check if Demo Project already exists
+        existing_proj = await session.execute(
+            select(Project).where(Project.name == "Demo Security Assessment Lab")
+        )
+        if existing_proj.scalar_one_or_none():
+            print("[+] Demo Security Assessment Lab already exists in database. Skipping duplicate seed.")
+            print("[+] Note: DEMO DATA – NOT A REAL SECURITY ASSESSMENT")
+            return
+
         print("[+] Seeding Demo Security Assessment Project...")
 
         # 1. Demo Project
@@ -134,20 +149,26 @@ async def seed_data():
         await session.flush()
 
         # 6. Vulnerabilities & Findings
-        vuln_cve = Vulnerability(
-            cve_id="CVE-2023-44487",
-            title="HTTP/2 Rapid Reset Denial of Service",
-            description="The HTTP/2 protocol allows a high volume of requests with RST_STREAM frames, resulting in significant CPU utilization.",
-            cvss_score=7.5,
-            cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
-            severity="high",
-            cwe_ids=["CWE-400"],
-            known_exploited=True,
-            epss_score=0.85,
-            epss_percentile=0.92,
+        existing_vuln = await session.execute(
+            select(Vulnerability).where(Vulnerability.cve_id == "CVE-2023-44487")
         )
-        session.add(vuln_cve)
-        await session.flush()
+        vuln_cve = existing_vuln.scalar_one_or_none()
+
+        if not vuln_cve:
+            vuln_cve = Vulnerability(
+                cve_id="CVE-2023-44487",
+                title="HTTP/2 Rapid Reset Denial of Service",
+                description="The HTTP/2 protocol allows a high volume of requests with RST_STREAM frames, resulting in significant CPU utilization.",
+                cvss_score=7.5,
+                cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                severity="high",
+                cwe_ids=["CWE-400"],
+                known_exploited=True,
+                epss_score=0.85,
+                epss_percentile=0.92,
+            )
+            session.add(vuln_cve)
+            await session.flush()
 
         finding = Finding(
             service_id=svc_http.id,
