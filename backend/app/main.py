@@ -1,7 +1,14 @@
+import sys
+import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Enforce ProactorEventLoop on Windows for asyncio subprocess support
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 # Import models to ensure all SQLAlchemy metadata tables are registered before create_all
 import app.models  # noqa: F401
 from app.api.router import api_router
