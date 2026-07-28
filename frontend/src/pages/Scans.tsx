@@ -56,7 +56,10 @@ export const ScansPage: React.FC = () => {
           <p style={{ color: 'var(--text-secondary)' }}>Controlled subprocess execution with strict scope enforcement</p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            launchMutation.reset();
+            setShowModal(true);
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -122,11 +125,11 @@ export const ScansPage: React.FC = () => {
                     </code>
                   </td>
                   <td>
-                    <span className="badge badge-low" style={{ background: s.status === 'completed' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: s.status === 'completed' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                      {s.status}
+                    <span className="badge" style={{ background: s.status === 'completed' ? 'rgba(16,185,129,0.15)' : s.status === 'running' ? 'rgba(59,130,246,0.15)' : 'rgba(239,68,68,0.15)', color: s.status === 'completed' ? 'var(--accent-green)' : s.status === 'running' ? 'var(--accent-blue)' : 'var(--accent-red)' }}>
+                      {s.status.toUpperCase()}
                     </span>
                   </td>
-                  <td>{s.hosts?.length ?? 1} host(s)</td>
+                  <td>{s.hosts?.length ?? 0} host(s)</td>
                   <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                     {new Date(s.created_at).toLocaleString()}
                   </td>
@@ -142,6 +145,13 @@ export const ScansPage: React.FC = () => {
           <div className="card" style={{ width: '520px', background: 'var(--bg-secondary)' }}>
             <h2 className="card-title">Launch Authorized Nmap Scan</h2>
             <form onSubmit={handleLaunch} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {launchMutation.isError && (
+                <div style={{ padding: '0.75rem', background: 'rgba(239,68,68,0.15)', border: '1px solid var(--accent-red)', borderRadius: '6px', color: 'var(--accent-red)', fontSize: '0.85rem' }}>
+                  <AlertCircle size={16} style={{ display: 'inline', marginRight: '0.375rem', verticalAlign: 'middle' }} />
+                  {(launchMutation.error as any)?.response?.data?.detail || (launchMutation.error as any)?.message || "Scan execution failed."}
+                </div>
+              )}
+
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.375rem', color: 'var(--text-secondary)' }}>Select Authorized Target *</label>
                 {projectTargets.length === 0 ? (
@@ -205,10 +215,10 @@ export const ScansPage: React.FC = () => {
                 <button type="button" onClick={() => setShowModal(false)} style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--border-light)', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
                 <button
                   type="submit"
-                  disabled={!targetId}
+                  disabled={!targetId || launchMutation.isPending}
                   style={{ padding: '0.5rem 1rem', background: targetId ? 'var(--accent-red)' : 'var(--text-muted)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: targetId ? 'pointer' : 'not-allowed' }}
                 >
-                  Execute Scan
+                  {launchMutation.isPending ? 'Running Scan (Nmap)...' : 'Execute Scan'}
                 </button>
               </div>
             </form>
