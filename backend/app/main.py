@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+# Import models to ensure all SQLAlchemy metadata tables are registered before create_all
+import app.models  # noqa: F401
 from app.api.router import api_router
 from app.config import settings
 from app.database import Base, engine
