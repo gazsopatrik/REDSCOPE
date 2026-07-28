@@ -56,7 +56,7 @@ class ScanService:
                 f"Scan DENIED: Target '{target.target_value if target else data.target_id}' is out-of-scope ({target.scope_validation_message if target else ''})."
             )
 
-        # 2. Build command preview (quote executable if path contains spaces)
+        # 2. Build command preview formatted for PowerShell / CMD execution
         raw_args = ScanProfileBuilder.build_nmap_args(
             profile=data.profile,
             target_value=target.target_value,
@@ -64,8 +64,8 @@ class ScanService:
             custom_ports=data.custom_ports,
         )
         preview_args = list(raw_args)
-        if preview_args and " " in preview_args[0] and not preview_args[0].startswith('"'):
-            preview_args[0] = f'"{preview_args[0]}"'
+        if preview_args and " " in preview_args[0]:
+            preview_args[0] = f'& "{preview_args[0]}"'
         cmd_preview = " ".join(preview_args)
 
         # 3. Create Scan Record
