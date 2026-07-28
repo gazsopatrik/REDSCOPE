@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Activity, Play, CheckCircle, Clock, AlertTriangle, Shield, Terminal } from 'lucide-react';
-import { getProjects, getTargets, getScans, createScan } from '../api/client';
+import { Activity, Play, Shield, Terminal, AlertCircle } from 'lucide-react';
+import { getProjects, getAllTargets, getScans, createScan } from '../api/client';
 import { Project, Target, Scan } from '../types';
 
 export const ScansPage: React.FC = () => {
@@ -19,11 +19,12 @@ export const ScansPage: React.FC = () => {
 
   const activeProjectId = selectedProjectId || (projects[0]?.id ?? '');
 
-  const { data: targets = [] } = useQuery<Target[]>({
-    queryKey: ['targets', activeProjectId],
-    queryFn: () => (activeProjectId ? getTargets(activeProjectId) : Promise.resolve([])),
-    enabled: !!activeProjectId,
+  const { data: allTargets = [] } = useQuery<Target[]>({
+    queryKey: ['targets', 'all'],
+    queryFn: getAllTargets,
   });
+
+  const projectTargets = allTargets.filter((t) => !activeProjectId || t.project_id === activeProjectId);
 
   const { data: scans = [], isLoading } = useQuery<Scan[]>({
     queryKey: ['scans', activeProjectId],
@@ -32,18 +33,19 @@ export const ScansPage: React.FC = () => {
   });
 
   const launchMutation = useMutation({
-    mutationFn: (data: { target_id: string; profile: string }) =>
+    mutationFn: (data: { target_id: string; profile: string; custom_ports?: string }) =>
       createScan(activeProjectId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scans', activeProjectId] });
       setShowModal(false);
+      setTargetId('');
     },
   });
 
   const handleLaunch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetId || !activeProjectId) return;
-    launchMutation.mutate({ target_id: targetId, profile });
+    launchMutation.mutate({ target_id: targetId, profile, custom_ports: customPorts });
   };
 
   return (
@@ -137,24 +139,30 @@ export const ScansPage: React.FC = () => {
 
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div className="card" style={{ width: '500px', background: 'var(--bg-secondary)' }}>
+          <div className="card" style={{ width: '520px', background: 'var(--bg-secondary)' }}>
             <h2 className="card-title">Launch Authorized Nmap Scan</h2>
             <form onSubmit={handleLaunch} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.375rem', color: 'var(--text-secondary)' }}>Select Authorized Target *</label>
-                <select
-                  required
-                  value={targetId}
-                  onChange={(e) => setTargetId(e.target.value)}
-                  style={{ width: '100%', padding: '0.625rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-primary)', color: '#fff' }}
-                >
-                  <option value="">-- Choose Target --</option>
-                  {targets.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.target_value} ({t.scope_status.toUpperCase()})
-                    </option>
-                  ))}
-                </select>
+                {projectTargets.length === 0 ? (
+                  <div style={{ padding: '0.75rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: 'var(--accent-red)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <AlertCircle size={16} /> No target hosts exist for this project yet. Please add a target on the Projects page first.
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={targetId}
+                    onChange={(e) => setTargetId(e.target.value)}
+                    style={{ width: '100%', padding: '0.625rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-primary)', color: '#fff' }}
+                  >
+                    <option value="">-- Choose Target Host --</option>
+                    {projectTargets.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.target_value} ({t.scope_status ? t.scope_status.toUpperCase() : 'PENDING'})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>
@@ -195,7 +203,13 @@ export const ScansPage: React.FC = () => {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowModal(false)} style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--border-light)', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ padding: '0.5rem 1rem', background: 'var(--accent-red)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>Execute Scan</button>
+                <button
+                  type="submit"
+                  disabled={!targetId}
+                  style={{ padding: '0.5rem 1rem', background: targetId ? 'var(--accent-red)' : 'var(--text-muted)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: targetId ? 'pointer' : 'not-allowed' }}
+                >
+                  Execute Scan
+                </button>
               </div>
             </form>
           </div>

@@ -10,6 +10,11 @@ from app.services.scope_service import ScopeService
 
 class TargetService:
     @staticmethod
+    async def get_all_targets(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[Target]:
+        result = await db.execute(select(Target).offset(skip).limit(limit).order_by(Target.created_at.desc()))
+        return list(result.scalars().all())
+
+    @staticmethod
     async def get_targets_by_project(db: AsyncSession, project_id: str) -> List[Target]:
         result = await db.execute(select(Target).where(Target.project_id == project_id))
         return list(result.scalars().all())

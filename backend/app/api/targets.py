@@ -9,6 +9,13 @@ from app.services.target_service import TargetService
 router = APIRouter()
 
 
+@router.get("/targets", response_model=List[TargetRead])
+async def list_all_targets(
+    skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
+) -> List[TargetRead]:
+    return await TargetService.get_all_targets(db, skip=skip, limit=limit)
+
+
 @router.get("/projects/{project_id}/targets", response_model=List[TargetRead])
 async def list_project_targets(
     project_id: str, db: AsyncSession = Depends(get_db)
