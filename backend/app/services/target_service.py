@@ -1,7 +1,9 @@
 from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.scope import ScopeType
 from app.models.target import Target
+from app.schemas.scope import ScopeCreate
 from app.schemas.target import TargetCreate
 from app.scope.validator import ScopeValidator
 from app.services.audit_service import AuditService
@@ -28,6 +30,18 @@ class TargetService:
     async def add_target(
         db: AsyncSession, project_id: str, data: TargetCreate, actor: str = "system"
     ) -> Target:
+        # Check existing project scopes; if 0 scope rules exist, auto-authorize target
+        existing_scopes = await ScopeService.get_scopes_by_project(db, project_id)
+        if not existing_scopes:
+            auto_scope = ScopeCreate(
+                scope_type=ScopeType.SINGLE_IP,
+                value=data.target_value.strip(),
+                description="Auto-authorized target scope",
+                is_exclusion=False,
+                enabled=True,
+            )
+            await ScopeService.add_scope(db, project_id, auto_scope, actor=actor)
+
         target = Target(project_id=project_id, **data.model_dump())
         db.add(target)
         await db.commit()
