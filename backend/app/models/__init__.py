@@ -6,6 +6,7 @@ from app.models.scan import Scan, ScanProfile, ScanStatus
 from app.models.scope import Scope, ScopeType
 from app.models.service import Service
 from app.models.target import ScopeStatus, Target, TargetType
+from app.models.validation import Validation, ValidationStatus
 from app.models.vulnerability import Vulnerability
 
 __all__ = [
@@ -25,5 +26,7 @@ __all__ = [
     "Finding",
     "FindingStatus",
     "FindingSeverity",
+    "Validation",
+    "ValidationStatus",
     "AuditLog",
 ]
