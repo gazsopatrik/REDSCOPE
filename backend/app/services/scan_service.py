@@ -1,9 +1,10 @@
+import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from app.database import AsyncSessionLocal
 from app.models.host import Host
 from app.models.scan import Scan, ScanProfile, ScanStatus
 from app.models.service import Service
@@ -23,6 +24,7 @@ class ScanServiceError(Exception):
 class ScanService:
     @staticmethod
     async def get_scans_by_project(db: AsyncSession, project_id: str) -> List[Scan]:
+        from sqlalchemy.orm import selectinload
         result = await db.execute(
             select(Scan)
             .options(selectinload(Scan.hosts).selectinload(Host.services))
@@ -33,6 +35,7 @@ class ScanService:
 
     @staticmethod
     async def get_scan_by_id(db: AsyncSession, scan_id: str) -> Optional[Scan]:
+        from sqlalchemy.orm import selectinload
         result = await db.execute(
             select(Scan)
             .options(selectinload(Scan.hosts).selectinload(Host.services))
@@ -68,7 +71,7 @@ class ScanService:
             preview_args[0] = f'& "{preview_args[0]}"'
         cmd_preview = " ".join(preview_args)
 
-        # 3. Create Scan Record
+        # 3. Create Scan Record in RUNNING state
         scan = Scan(
             project_id=project_id,
             target_id=target.id,
@@ -93,73 +96,110 @@ class ScanService:
             details={"target": target.target_value, "profile": data.profile.value, "command": cmd_preview},
         )
 
-        # 4. Execute Async Nmap Subprocess
-        exit_code, xml_path, stdout_str, stderr_str = await NmapRunner.run_scan_async(
-            target_value=target.target_value,
-            profile=data.profile,
-            custom_ports=data.custom_ports,
+        # 4. Dispatch Async Background Task for Nmap execution
+        asyncio.create_task(
+            ScanService._execute_scan_background(
+                scan_id=scan.id,
+                target_id=target.id,
+                project_id=project_id,
+                target_value=target.target_value,
+                profile=data.profile,
+                custom_ports=data.custom_ports,
+                actor=actor,
+            )
         )
 
-        scan.finished_at = datetime.now(timezone.utc)
-        scan.exit_code = exit_code
-        scan.xml_output_path = xml_path
+        res = await ScanService.get_scan_by_id(db, scan.id)
+        return res if res else scan
 
-        # 5. Parse XML Output & Save Discovered Hosts/Services
-        scan.status = ScanStatus.PARSING
-        await db.commit()
-
+    @staticmethod
+    async def _execute_scan_background(
+        scan_id: str,
+        target_id: str,
+        project_id: str,
+        target_value: str,
+        profile: ScanProfile,
+        custom_ports: Optional[str] = None,
+        actor: str = "system",
+    ):
+        """Asynchronous worker that executes Nmap and updates DB status upon completion."""
         try:
-            parsed_result = NmapXMLParser.parse_xml_file(xml_path)
-            for p_host in parsed_result.hosts:
-                host_db = Host(
-                    scan_id=scan.id,
-                    ip_address=p_host.ip_address,
-                    hostname=p_host.hostname,
-                    mac_address=p_host.mac_address,
-                    vendor=p_host.vendor,
-                    state=p_host.state,
-                    os_name=p_host.os_name,
-                    os_accuracy=p_host.os_accuracy,
-                )
-                db.add(host_db)
-                await db.flush()
-
-                for p_svc in p_host.services:
-                    svc_db = Service(
-                        host_id=host_db.id,
-                        protocol=p_svc.protocol,
-                        port=p_svc.port,
-                        state=p_svc.state,
-                        service_name=p_svc.service_name,
-                        product=p_svc.product,
-                        version=p_svc.version,
-                        extra_info=p_svc.extra_info,
-                        tunnel=p_svc.tunnel,
-                        cpe=p_svc.cpe,
-                        confidence=p_svc.confidence,
-                        banner=p_svc.banner,
-                    )
-                    db.add(svc_db)
-
-            target.last_scanned_at = datetime.now(timezone.utc)
-            scan.status = ScanStatus.COMPLETED
-            await db.commit()
-
-            await AuditService.log_event(
-                db=db,
-                action="scan_completed",
-                entity_type="scan",
-                actor=actor,
-                entity_id=scan.id,
-                project_id=project_id,
-                details={"hosts_found": len(parsed_result.hosts)},
+            exit_code, xml_path, stdout_str, stderr_str = await NmapRunner.run_scan_async(
+                target_value=target_value,
+                profile=profile,
+                custom_ports=custom_ports,
             )
-            res = await ScanService.get_scan_by_id(db, scan.id)
-            return res if res else scan
+        except Exception as run_err:
+            async with AsyncSessionLocal() as db:
+                scan = await ScanService.get_scan_by_id(db, scan_id)
+                if scan:
+                    scan.status = ScanStatus.FAILED
+                    scan.error_message = f"Subprocess error: {str(run_err)}"
+                    await db.commit()
+            return
 
-        except Exception as parse_err:
-            scan.status = ScanStatus.FAILED
-            scan.error_message = f"XML parsing error: {str(parse_err)}"
+        async with AsyncSessionLocal() as db:
+            scan = await ScanService.get_scan_by_id(db, scan_id)
+            if not scan:
+                return
+
+            scan.finished_at = datetime.now(timezone.utc)
+            scan.exit_code = exit_code
+            scan.xml_output_path = xml_path
+            scan.status = ScanStatus.PARSING
             await db.commit()
-            res = await ScanService.get_scan_by_id(db, scan.id)
-            return res if res else scan
+
+            try:
+                parsed_result = NmapXMLParser.parse_xml_file(xml_path)
+                for p_host in parsed_result.hosts:
+                    host_db = Host(
+                        scan_id=scan.id,
+                        ip_address=p_host.ip_address,
+                        hostname=p_host.hostname,
+                        mac_address=p_host.mac_address,
+                        vendor=p_host.vendor,
+                        state=p_host.state,
+                        os_name=p_host.os_name,
+                        os_accuracy=p_host.os_accuracy,
+                    )
+                    db.add(host_db)
+                    await db.flush()
+
+                    for p_svc in p_host.services:
+                        svc_db = Service(
+                            host_id=host_db.id,
+                            protocol=p_svc.protocol,
+                            port=p_svc.port,
+                            state=p_svc.state,
+                            service_name=p_svc.service_name,
+                            product=p_svc.product,
+                            version=p_svc.version,
+                            extra_info=p_svc.extra_info,
+                            tunnel=p_svc.tunnel,
+                            cpe=p_svc.cpe,
+                            confidence=p_svc.confidence,
+                            banner=p_svc.banner,
+                        )
+                        db.add(svc_db)
+
+                target = await TargetService.get_target_by_id(db, target_id)
+                if target:
+                    target.last_scanned_at = datetime.now(timezone.utc)
+
+                scan.status = ScanStatus.COMPLETED
+                await db.commit()
+
+                await AuditService.log_event(
+                    db=db,
+                    action="scan_completed",
+                    entity_type="scan",
+                    actor=actor,
+                    entity_id=scan.id,
+                    project_id=project_id,
+                    details={"hosts_found": len(parsed_result.hosts)},
+                )
+
+            except Exception as parse_err:
+                scan.status = ScanStatus.FAILED
+                scan.error_message = f"Scan error: {str(parse_err)}"
+                await db.commit()

@@ -30,6 +30,11 @@ export const ScansPage: React.FC = () => {
     queryKey: ['scans', activeProjectId],
     queryFn: () => (activeProjectId ? getScans(activeProjectId) : Promise.resolve([])),
     enabled: !!activeProjectId,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      const isRunning = data && data.some((s: Scan) => s.status === 'running' || s.status === 'parsing');
+      return isRunning ? 2000 : false;
+    },
   });
 
   const launchMutation = useMutation({
@@ -125,7 +130,7 @@ export const ScansPage: React.FC = () => {
                     </code>
                   </td>
                   <td>
-                    <span className="badge" style={{ background: s.status === 'completed' ? 'rgba(16,185,129,0.15)' : s.status === 'running' ? 'rgba(59,130,246,0.15)' : 'rgba(239,68,68,0.15)', color: s.status === 'completed' ? 'var(--accent-green)' : s.status === 'running' ? 'var(--accent-blue)' : 'var(--accent-red)' }}>
+                    <span className="badge" style={{ background: s.status === 'completed' ? 'rgba(16,185,129,0.15)' : s.status === 'running' ? 'rgba(59,130,246,0.15)' : s.status === 'parsing' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)', color: s.status === 'completed' ? 'var(--accent-green)' : s.status === 'running' ? 'var(--accent-blue)' : s.status === 'parsing' ? '#f59e0b' : 'var(--accent-red)' }}>
                       {s.status.toUpperCase()}
                     </span>
                   </td>
@@ -218,7 +223,7 @@ export const ScansPage: React.FC = () => {
                   disabled={!targetId || launchMutation.isPending}
                   style={{ padding: '0.5rem 1rem', background: targetId ? 'var(--accent-red)' : 'var(--text-muted)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: targetId ? 'pointer' : 'not-allowed' }}
                 >
-                  {launchMutation.isPending ? 'Running Scan (Nmap)...' : 'Execute Scan'}
+                  {launchMutation.isPending ? 'Launching...' : 'Execute Scan'}
                 </button>
               </div>
             </form>
