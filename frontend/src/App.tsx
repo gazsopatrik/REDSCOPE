@@ -4,6 +4,12 @@ import { Shield, LayoutDashboard, Target, Activity, AlertTriangle, CheckSquare, 
 import { Dashboard } from './pages/Dashboard';
 import { ProjectsPage } from './pages/Projects';
 import { TargetsPage } from './pages/Targets';
+import { ScansPage } from './pages/Scans';
+import { FindingsPage } from './pages/Findings';
+import { ValidationsPage } from './pages/Validations';
+import { ReportsPage } from './pages/Reports';
+import { AuditLogPage } from './pages/AuditLog';
+import { SettingsPage } from './pages/Settings';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -71,6 +77,12 @@ export const App: React.FC = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/targets" element={<TargetsPage />} />
+            <Route path="/scans" element={<ScansPage />} />
+            <Route path="/findings" element={<FindingsPage />} />
+            <Route path="/validations" element={<ValidationsPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/audit-log" element={<AuditLogPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Dashboard />} />
           </Routes>
         </main>
