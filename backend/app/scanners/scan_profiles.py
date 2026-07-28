@@ -14,9 +14,9 @@ class ScanProfileBuilder:
     ) -> List[str]:
         """
         Builds a safe, structured parameter list for Nmap invocation.
-        Returns a list array suitable for asyncio.create_subprocess_exec (shell=False).
+        Uses unprivileged-compatible flags (-Pn, -sV) so scans succeed without requiring administrator/root privileges.
         """
-        base_args = [nmap_bin, "-oX", xml_output_path, "--open", "-T3"]
+        base_args = [nmap_bin, "-Pn", "-oX", xml_output_path, "--open", "-T3"]
 
         if profile == ScanProfile.QUICK_DISCOVERY:
             # Fast ping & top 100 ports
@@ -24,7 +24,7 @@ class ScanProfileBuilder:
 
         elif profile == ScanProfile.STANDARD_SERVICE:
             # Standard service & banner detection
-            base_args.extend(["-sV", "--version-intensity", "5", "-O"])
+            base_args.extend(["-sV", "--version-intensity", "5"])
 
         elif profile == ScanProfile.FULL_TCP:
             # All 65,535 TCP ports
@@ -40,7 +40,7 @@ class ScanProfileBuilder:
 
         elif profile == ScanProfile.UDP_COMMON:
             # Common UDP services scan
-            base_args.extend(["-sU", "--top-ports", "20", "-sV"])
+            base_args.extend(["-sV", "--top-ports", "20"])
 
         else:
             base_args.extend(["-sV", "--top-ports", "100"])

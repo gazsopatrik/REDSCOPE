@@ -102,9 +102,11 @@ class ScanService:
         scan.exit_code = exit_code
         scan.xml_output_path = xml_path
 
-        if exit_code != 0 and not Path(xml_path).exists():
+        xml_exists = Path(xml_path).exists() and Path(xml_path).stat().st_size > 0
+
+        if exit_code != 0 and not xml_exists:
             scan.status = ScanStatus.FAILED
-            scan.error_message = stderr_str or "Nmap scan process failed with non-zero exit code."
+            scan.error_message = stderr_str or stdout_str or f"Nmap scan failed with exit code {exit_code}."
             await db.commit()
 
             await AuditService.log_event(
