@@ -43,6 +43,7 @@ htmlcov/
 *.sqlite
 *.sqlite3
 *.log
+*.xml
 scans_raw/
 reports_gen/
 
