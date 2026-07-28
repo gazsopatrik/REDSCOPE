@@ -2,6 +2,7 @@ from app.models.audit_log import AuditLog
 from app.models.finding import Finding, FindingSeverity, FindingStatus
 from app.models.host import Host
 from app.models.project import Project, ProjectStatus
+from app.models.report import Report, ReportFormat
 from app.models.scan import Scan, ScanProfile, ScanStatus
 from app.models.scope import Scope, ScopeType
 from app.models.service import Service
@@ -28,5 +29,7 @@ __all__ = [
     "FindingSeverity",
     "Validation",
     "ValidationStatus",
+    "Report",
+    "ReportFormat",
     "AuditLog",
 ]
