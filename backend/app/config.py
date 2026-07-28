@@ -1,6 +1,10 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Base directory of backend package
+BASE_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_DB_FILE = BASE_DIR / "redscope_dev.db"
+
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
@@ -9,8 +13,8 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api"
     SECRET_KEY: str = "redscope_super_secret_development_key_change_in_production_32bytes"
 
-    # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./redscope_dev.db"
+    # Persistent SQLite Database URL (absolute path prevents working directory mismatches)
+    DATABASE_URL: str = f"sqlite+aiosqlite:///{DEFAULT_DB_FILE.as_posix()}"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -18,8 +22,8 @@ class Settings(BaseSettings):
     # Scanner & Paths
     NMAP_PATH: str = "nmap"
     NMAP_DEFAULT_TIMEOUT: int = 1800
-    SCANS_DIR: Path = Path("./scans_raw")
-    REPORTS_DIR: Path = Path("./reports_gen")
+    SCANS_DIR: Path = BASE_DIR / "scans_raw"
+    REPORTS_DIR: Path = BASE_DIR / "reports_gen"
 
     # Safety Thresholds
     MAX_CONCURRENT_SCANS: int = 4
