@@ -138,7 +138,7 @@ npm run dev
 ```bash
 docker-compose up --build -d
 ```
-Access the application at `http://localhost:5173` (Frontend) and API docs at `http://localhost:8000/docs`.
+Access the application at `http://localhost:5173` (Frontend) and API docs at `http://localhost:8000/api/docs`.
 
 ---
 
