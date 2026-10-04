@@ -1,5 +1,6 @@
 import ipaddress
 import socket
+from itertools import islice
 from dataclasses import dataclass
 from typing import List, Tuple
 from app.models.scope import Scope, ScopeType
@@ -30,10 +31,11 @@ class ScopeValidator:
         # Try CIDR network
         try:
             net_obj = ipaddress.ip_network(target_str, strict=False)
-            # Limit returned sample addresses if network is large
-            hosts = [str(ip) for ip in list(net_obj.hosts())[:256]]
-            if not hosts:  # /32 or /128 single host network
-                hosts = [str(net_obj.network_address)]
+            # Never approve a CIDR after validating only a subset of its hosts.
+            # Bound enumeration so large IPv4/IPv6 networks cannot exhaust memory.
+            hosts = [str(ip) for ip in islice(net_obj.hosts(), 257)]
+            if len(hosts) > 256:
+                return False, [], f"CIDR network {net_obj} exceeds the 256-host validation limit"
             return True, hosts, f"CIDR network {net_obj} validated"
         except ValueError:
             pass

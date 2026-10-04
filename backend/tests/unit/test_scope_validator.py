@@ -70,3 +70,17 @@ def test_scope_exclusion_takes_priority() -> None:
     assert decision.is_allowed is False
     assert decision.status == ScopeStatus.DENIED
     assert "explicit exclusion rule" in decision.message
+
+
+def test_resolve_cidr_rejects_more_than_256_hosts() -> None:
+    for network in ("10.0.0.0/8", "2001:db8::/64"):
+        ok, ips, msg = ScopeValidator.resolve_target(network)
+        assert ok is False
+        assert ips == []
+        assert "256-host validation limit" in msg
+
+
+def test_resolve_cidr_accepts_254_hosts() -> None:
+    ok, ips, _ = ScopeValidator.resolve_target("192.168.1.0/24")
+    assert ok is True
+    assert len(ips) == 254
