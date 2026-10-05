@@ -126,6 +126,8 @@ class NmapRunner:
             )
 
         except asyncio.TimeoutError:
+            process.kill()
+            await process.communicate()
             logger.error(f"Nmap scan process timed out after {timeout_seconds}s")
             return -1, xml_output_path, "", f"Scan process timed out after {timeout_seconds} seconds"
 
