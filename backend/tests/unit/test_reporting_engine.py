@@ -45,6 +45,24 @@ def test_html_report_generator() -> None:
         Path(temp_path).unlink(missing_ok=True)
 
 
+def test_html_report_escapes_untrusted_values() -> None:
+    data = get_mock_report_data()
+    data["project"]["name"] = "<script>alert('project')</script>"
+    data["findings"][0]["title"] = "<img src=x onerror=alert('finding')>"
+    with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as f:
+        temp_path = f.name
+
+    try:
+        HTMLReportGenerator.generate_html_report(data, temp_path)
+        content = Path(temp_path).read_text(encoding="utf-8")
+        assert "<script>" not in content
+        assert "<img src=x" not in content
+        assert "&lt;script&gt;" in content
+        assert "&lt;img src=x" in content
+    finally:
+        Path(temp_path).unlink(missing_ok=True)
+
+
 def test_markdown_report_generator() -> None:
     data = get_mock_report_data()
     with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:

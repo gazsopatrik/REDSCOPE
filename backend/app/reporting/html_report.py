@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
-from jinja2 import Template
+from jinja2 import Environment, select_autoescape
 
 HTML_TEMPLATE_STR = """<!DOCTYPE html>
 <html lang="en">
@@ -86,7 +86,8 @@ HTML_TEMPLATE_STR = """<!DOCTYPE html>
 class HTMLReportGenerator:
     @staticmethod
     def generate_html_report(data: Dict[str, Any], output_path: str) -> str:
-        template = Template(HTML_TEMPLATE_STR)
+        environment = Environment(autoescape=select_autoescape(default_for_string=True))
+        template = environment.from_string(HTML_TEMPLATE_STR)
         rendered_html = template.render(
             project=data["project"],
             scopes=data["scopes"],
