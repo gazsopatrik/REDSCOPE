@@ -1,6 +1,17 @@
+import ipaddress
 from typing import Any, Dict
 import httpx
 from app.validators.base import BaseValidator, ValidationResult
+
+
+def build_http_endpoint_url(target: str, port: int, scheme: str) -> str:
+    """Build an HTTP URL, adding brackets required for IPv6 literals."""
+    try:
+        address = ipaddress.ip_address(target)
+        host = f"[{address.compressed}]" if address.version == 6 else str(address)
+    except ValueError:
+        host = target
+    return f"{scheme}://{host}:{port}/"
 
 
 class HTTPValidator(BaseValidator):
@@ -20,7 +31,7 @@ class HTTPValidator(BaseValidator):
 
     async def validate(self, target_ip: str, port: int, service_info: Dict[str, Any]) -> ValidationResult:
         scheme = "https" if port in (443, 8443) or "ssl" in str(service_info.get("tunnel", "")) else "http"
-        url = f"{scheme}://{target_ip}:{port}/"
+        url = build_http_endpoint_url(target_ip, port, scheme)
 
         try:
             async with httpx.AsyncClient(verify=False, timeout=5.0) as client:
