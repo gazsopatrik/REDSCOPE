@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "RedScope"
     API_V1_STR: str = "/api"
     SECRET_KEY: str = "redscope_super_secret_development_key_change_in_production_32bytes"
+    CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
     # Persistent SQLite Database URL (absolute path prevents working directory mismatches)
     DATABASE_URL: str = f"sqlite+aiosqlite:///{DEFAULT_DB_FILE.as_posix()}"

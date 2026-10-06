@@ -28,3 +28,27 @@ async def test_health_endpoint() -> None:
         assert "components" in data
         assert "database" in data["components"]
         assert "nmap" in data["components"]
+
+
+@pytest.mark.asyncio
+async def test_cors_allows_configured_frontend_only() -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        allowed = await client.options(
+            "/api/health",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        denied = await client.options(
+            "/api/health",
+            headers={
+                "Origin": "https://untrusted.example",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+
+    assert allowed.headers.get("access-control-allow-origin") == "http://localhost:5173"
+    assert denied.headers.get("access-control-allow-origin") is None
