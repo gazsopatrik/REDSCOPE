@@ -1,6 +1,12 @@
 from datetime import datetime, timezone
+from html import escape
 from pathlib import Path
 from typing import Any, Dict
+
+
+def markdown_safe(value: Any) -> str:
+    """Escape raw HTML while preserving ordinary Markdown punctuation."""
+    return escape(str(value), quote=False)
 
 
 class MarkdownReportGenerator:
@@ -10,12 +16,12 @@ class MarkdownReportGenerator:
         findings = data["findings"]
         targets = data["targets"]
 
-        md_content = f"""# RedScope Security Assessment Report: {proj['name']}
+        md_content = f"""# RedScope Security Assessment Report: {markdown_safe(proj['name'])}
 
-**Client**: {proj.get('client_name') or 'N/A'}  
-**Status**: {proj['status']}  
+**Client**: {markdown_safe(proj.get('client_name') or 'N/A')}  
+**Status**: {markdown_safe(proj['status'])}  
 **Generated At**: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}  
-**Authorization Ref**: {proj.get('authorization_reference') or 'N/A'}  
+**Authorization Ref**: {markdown_safe(proj.get('authorization_reference') or 'N/A')}  
 
 ---
 
@@ -38,14 +44,14 @@ class MarkdownReportGenerator:
 
 """
         for idx, f in enumerate(findings, 1):
-            md_content += f"""### Finding #{idx}: {f['title']}
+            md_content += f"""### Finding #{idx}: {markdown_safe(f['title'])}
 
-- **Severity**: {f['severity'].upper()}
+- **Severity**: {markdown_safe(str(f['severity']).upper())}
 - **Risk Score**: {f['risk_score']}/100
 - **Confidence**: {f['confidence_score']}/100
-- **Status**: {f['status']}
-- **Description**: {f.get('description') or 'N/A'}
-- **Remediation**: {f.get('remediation') or 'N/A'}
+- **Status**: {markdown_safe(f['status'])}
+- **Description**: {markdown_safe(f.get('description') or 'N/A')}
+- **Remediation**: {markdown_safe(f.get('remediation') or 'N/A')}
 
 ---
 """

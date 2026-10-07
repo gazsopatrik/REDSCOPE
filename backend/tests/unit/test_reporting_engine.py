@@ -78,6 +78,24 @@ def test_markdown_report_generator() -> None:
         Path(temp_path).unlink(missing_ok=True)
 
 
+def test_markdown_report_escapes_raw_html() -> None:
+    data = get_mock_report_data()
+    data["project"]["name"] = "<script>alert('project')</script>"
+    data["findings"][0]["description"] = "<img src=x onerror=alert('finding')>"
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+        temp_path = f.name
+
+    try:
+        MarkdownReportGenerator.generate_markdown_report(data, temp_path)
+        content = Path(temp_path).read_text(encoding="utf-8")
+        assert "<script>" not in content
+        assert "<img src=x" not in content
+        assert "&lt;script&gt;" in content
+        assert "&lt;img src=x" in content
+    finally:
+        Path(temp_path).unlink(missing_ok=True)
+
+
 def test_json_report_generator() -> None:
     data = get_mock_report_data()
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
