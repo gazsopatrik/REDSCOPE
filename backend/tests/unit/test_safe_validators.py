@@ -2,6 +2,7 @@ import pytest
 from app.validators.http_validator import HTTPValidator, build_http_endpoint_url
 from app.validators.registry import ValidatorRegistry
 from app.validators.ssh_validator import SSHValidator
+from app.validators.tls_validator import TLSValidator
 
 
 def test_validator_registry_lookup() -> None:
@@ -27,3 +28,36 @@ def test_validator_supports_query() -> None:
 def test_http_endpoint_url_formats_ip_literals() -> None:
     assert build_http_endpoint_url("192.0.2.10", 8080, "http") == "http://192.0.2.10:8080/"
     assert build_http_endpoint_url("2001:db8::10", 8443, "https") == "https://[2001:db8::10]:8443/"
+
+
+@pytest.mark.asyncio
+async def test_tls_validator_closes_connection_after_certificate_error(monkeypatch) -> None:
+    class BrokenSSLObject:
+        def getpeercert(self, binary_form=False):
+            raise ValueError("malformed certificate")
+
+    class Writer:
+        def __init__(self) -> None:
+            self.closed = False
+            self.waited = False
+
+        def get_extra_info(self, name):
+            return BrokenSSLObject() if name == "ssl_object" else None
+
+        def close(self) -> None:
+            self.closed = True
+
+        async def wait_closed(self) -> None:
+            self.waited = True
+
+    writer = Writer()
+
+    async def open_connection(*args, **kwargs):
+        return object(), writer
+
+    monkeypatch.setattr("app.validators.tls_validator.asyncio.open_connection", open_connection)
+    result = await TLSValidator().validate("192.0.2.10", 443, {})
+
+    assert result.passed is False
+    assert writer.closed is True
+    assert writer.waited is True
