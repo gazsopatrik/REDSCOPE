@@ -17,6 +17,17 @@ class ScopeValidationDecision:
 
 class ScopeValidator:
     @staticmethod
+    def _resolve_hostname_addresses(hostname: str) -> List[str]:
+        """Resolve all IPv4 and IPv6 addresses for a hostname without duplicates."""
+        address_info = socket.getaddrinfo(
+            hostname,
+            None,
+            family=socket.AF_UNSPEC,
+            type=socket.SOCK_STREAM,
+        )
+        return list(dict.fromkeys(item[4][0] for item in address_info))
+
+    @staticmethod
     def resolve_target(target_value: str) -> Tuple[bool, List[str], str]:
         """Resolves target string to IP addresses. Supports single IP, CIDR, and hostnames."""
         target_str = target_value.strip()
@@ -42,7 +53,7 @@ class ScopeValidator:
 
         # Try Hostname / Domain DNS resolution
         try:
-            _, _, ip_list = socket.gethostbyname_ex(target_str)
+            ip_list = ScopeValidator._resolve_hostname_addresses(target_str)
             if not ip_list:
                 return False, [], f"DNS resolution yielded no IP addresses for {target_str}"
             return True, ip_list, f"Hostname resolved to {len(ip_list)} IP address(es)"
@@ -148,7 +159,7 @@ class ScopeValidator:
         elif scope.scope_type in (ScopeType.HOSTNAME, ScopeType.DOMAIN):
             # Resolve scope hostname to compare IPs
             try:
-                _, _, scope_ips = socket.gethostbyname_ex(val)
+                scope_ips = ScopeValidator._resolve_hostname_addresses(val)
                 return str(ip_obj) in scope_ips
             except Exception:
                 return False
