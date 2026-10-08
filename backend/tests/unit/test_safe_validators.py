@@ -61,3 +61,33 @@ async def test_tls_validator_closes_connection_after_certificate_error(monkeypat
     assert result.passed is False
     assert writer.closed is True
     assert writer.waited is True
+
+
+@pytest.mark.asyncio
+async def test_ssh_validator_closes_connection_after_banner_timeout(monkeypatch) -> None:
+    class Reader:
+        async def readline(self):
+            raise TimeoutError("banner timeout")
+
+    class Writer:
+        def __init__(self) -> None:
+            self.closed = False
+            self.waited = False
+
+        def close(self) -> None:
+            self.closed = True
+
+        async def wait_closed(self) -> None:
+            self.waited = True
+
+    writer = Writer()
+
+    async def open_connection(*args, **kwargs):
+        return Reader(), writer
+
+    monkeypatch.setattr("app.validators.ssh_validator.asyncio.open_connection", open_connection)
+    result = await SSHValidator().validate("192.0.2.10", 22, {})
+
+    assert result.passed is False
+    assert writer.closed is True
+    assert writer.waited is True
