@@ -16,15 +16,13 @@ class SSHValidator(BaseValidator):
         return service_name.lower() == "ssh" or port == 22
 
     async def validate(self, target_ip: str, port: int, service_info: Dict[str, Any]) -> ValidationResult:
+        writer = None
         try:
             reader, writer = await asyncio.wait_for(
                 asyncio.open_connection(target_ip, port), timeout=5.0
             )
 
             banner_bytes = await asyncio.wait_for(reader.readline(), timeout=3.0)
-            writer.close()
-            await writer.wait_closed()
-
             banner_str = banner_bytes.decode(errors="replace").strip()
 
             evidence = {
@@ -50,3 +48,10 @@ class SSHValidator(BaseValidator):
                 evidence={"target": f"{target_ip}:{port}", "error": str(e)},
                 error_message=str(e),
             )
+        finally:
+            if writer is not None:
+                writer.close()
+                try:
+                    await writer.wait_closed()
+                except Exception:
+                    pass
