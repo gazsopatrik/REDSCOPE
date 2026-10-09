@@ -2,6 +2,7 @@ import pytest
 from app.validators.http_validator import HTTPValidator, build_http_endpoint_url
 from app.validators.registry import ValidatorRegistry
 from app.validators.ssh_validator import SSHValidator
+from app.validators.smb_validator import SMBValidator
 from app.validators.tls_validator import TLSValidator
 
 
@@ -88,6 +89,45 @@ async def test_ssh_validator_closes_connection_after_banner_timeout(monkeypatch)
     monkeypatch.setattr("app.validators.ssh_validator.asyncio.open_connection", open_connection)
     result = await SSHValidator().validate("192.0.2.10", 22, {})
 
+    assert result.passed is False
+    assert writer.closed is True
+    assert writer.waited is True
+
+
+@pytest.mark.asyncio
+async def test_smb_validator_sends_complete_packet_and_closes_after_timeout(monkeypatch) -> None:
+    class Reader:
+        async def read(self, size):
+            raise TimeoutError("SMB response timeout")
+
+    class Writer:
+        def __init__(self) -> None:
+            self.packet = b""
+            self.closed = False
+            self.waited = False
+
+        def write(self, packet: bytes) -> None:
+            self.packet = packet
+
+        async def drain(self) -> None:
+            pass
+
+        def close(self) -> None:
+            self.closed = True
+
+        async def wait_closed(self) -> None:
+            self.waited = True
+
+    writer = Writer()
+
+    async def open_connection(*args, **kwargs):
+        return Reader(), writer
+
+    monkeypatch.setattr("app.validators.smb_validator.asyncio.open_connection", open_connection)
+    result = await SMBValidator().validate("192.0.2.10", 445, {})
+
+    declared_payload_length = int.from_bytes(writer.packet[1:4], "big")
+    assert declared_payload_length == len(writer.packet) - 4
     assert result.passed is False
     assert writer.closed is True
     assert writer.waited is True
