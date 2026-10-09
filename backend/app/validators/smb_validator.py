@@ -16,20 +16,21 @@ class SMBValidator(BaseValidator):
         return service_name.lower() in self.supported_services or port in (445, 139)
 
     async def validate(self, target_ip: str, port: int, service_info: Dict[str, Any]) -> ValidationResult:
+        writer = None
         try:
             reader, writer = await asyncio.wait_for(
                 asyncio.open_connection(target_ip, port), timeout=5.0
             )
 
             # Send SMB NetBIOS Session Request / Negotiation header (read-only dialect query)
-            smb1_negotiate_pkt = bytes.fromhex(\n                "0000002fff534d427200000000180128000000000000000000"\n                "0000000000000000000000000c00024e54204c4d20302e313200"\n            )
+            smb1_negotiate_pkt = bytes.fromhex(
+                "0000002fff534d427200000000180128000000000000000000"
+                "0000000000000000000000000c00024e54204c4d20302e313200"
+            )
             writer.write(smb1_negotiate_pkt)
             await writer.drain()
 
             resp = await asyncio.wait_for(reader.read(1024), timeout=3.0)
-            writer.close()
-            await writer.wait_closed()
-
             is_smb_resp = len(resp) >= 4 and b"SMB" in resp
 
             evidence = {
@@ -55,3 +56,10 @@ class SMBValidator(BaseValidator):
                 evidence={"target": f"{target_ip}:{port}", "error": str(e)},
                 error_message=str(e),
             )
+        finally:
+            if writer is not None:
+                writer.close()
+                try:
+                    await writer.wait_closed()
+                except Exception:
+                    pass
