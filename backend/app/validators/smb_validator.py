@@ -22,7 +22,7 @@ class SMBValidator(BaseValidator):
             )
 
             # Send SMB NetBIOS Session Request / Negotiation header (read-only dialect query)
-            smb1_negotiate_pkt = bytes.fromhex("0000002fff534d427200000000180128000000000000000000000000000000000c00024e54204c4d20302e313200")
+            smb1_negotiate_pkt = bytes.fromhex(\n                "0000002fff534d427200000000180128000000000000000000"\n                "0000000000000000000000000c00024e54204c4d20302e313200"\n            )
             writer.write(smb1_negotiate_pkt)
             await writer.drain()
 
