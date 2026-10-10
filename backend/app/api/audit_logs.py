@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -12,7 +12,10 @@ router = APIRouter()
 
 @router.get("/projects/{project_id}/audit-logs", response_model=List[AuditLogRead])
 async def list_project_audit_logs(
-    project_id: str, skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
+    project_id: str,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
 ) -> List[AuditLogRead]:
     project = await ProjectService.get_project_by_id(db, project_id)
     if not project:
