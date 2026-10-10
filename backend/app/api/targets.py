@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.target import TargetCreate, TargetRead
@@ -11,7 +11,9 @@ router = APIRouter()
 
 @router.get("/targets", response_model=List[TargetRead])
 async def list_all_targets(
-    skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
 ) -> List[TargetRead]:
     return await TargetService.get_all_targets(db, skip=skip, limit=limit)
 
