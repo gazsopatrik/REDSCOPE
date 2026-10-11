@@ -84,3 +84,24 @@ def test_resolve_cidr_accepts_254_hosts() -> None:
     ok, ips, _ = ScopeValidator.resolve_target("192.168.1.0/24")
     assert ok is True
     assert len(ips) == 254
+
+
+def test_scope_denies_target_without_explicit_active_rules() -> None:
+    decision = ScopeValidator.evaluate_target_against_scopes("192.168.1.10", [])
+    assert decision.is_allowed is False
+    assert decision.status == ScopeStatus.DENIED
+    assert "no active scope rules" in decision.message.lower()
+
+    disabled_scope = Scope(
+        id="scope-disabled",
+        project_id="proj-1",
+        scope_type=ScopeType.SINGLE_IP,
+        value="192.168.1.10",
+        is_exclusion=False,
+        enabled=False,
+    )
+    disabled_decision = ScopeValidator.evaluate_target_against_scopes(
+        "192.168.1.10", [disabled_scope]
+    )
+    assert disabled_decision.is_allowed is False
+    assert disabled_decision.status == ScopeStatus.DENIED
