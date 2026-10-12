@@ -134,6 +134,7 @@ class ScanService:
                 scan = await ScanService.get_scan_by_id(db, scan_id)
                 if scan:
                     scan.status = ScanStatus.FAILED
+                    scan.finished_at = datetime.now(timezone.utc)
                     scan.error_message = f"Subprocess error: {str(run_err)}"
                     await db.commit()
             return
