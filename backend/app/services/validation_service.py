@@ -67,6 +67,11 @@ class ValidationService:
         if not validation:
             raise ValidationServiceError("Validation task not found.")
 
+        if validation.status != ValidationStatus.AWAITING_APPROVAL:
+            raise ValidationServiceError(
+                f"Cannot approve validation task in status '{validation.status.value}'."
+            )
+
         validation.status = ValidationStatus.APPROVED
         validation.approved_by = approved_by
         validation.approved_at = datetime.now(timezone.utc)
