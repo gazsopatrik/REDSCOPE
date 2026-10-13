@@ -45,6 +45,15 @@ class ValidationService:
         if not finding:
             raise ValidationServiceError("Finding not found.")
 
+        service_result = await db.execute(select(Service).where(Service.id == finding.service_id))
+        service = service_result.scalar_one_or_none()
+        if not service:
+            raise ValidationServiceError("Associated service not found.")
+        if not validator.supports(service.service_name or "", service.port):
+            raise ValidationServiceError(
+                `Validator '${validator_id}' does not support service '${service.service_name or "unknown"}' on port ${service.port}.`
+            )
+
         validation = Validation(
             finding_id=finding_id,
             validator_id=validator.id,
