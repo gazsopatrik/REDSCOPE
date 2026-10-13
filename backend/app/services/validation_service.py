@@ -51,7 +51,8 @@ class ValidationService:
             raise ValidationServiceError("Associated service not found.")
         if not validator.supports(service.service_name or "", service.port):
             raise ValidationServiceError(
-                `Validator '${validator_id}' does not support service '${service.service_name or "unknown"}' on port ${service.port}.`
+                f"Validator '{validator_id}' does not support service "
+                f"'{service.service_name or 'unknown'}' on port {service.port}."
             )
 
         validation = Validation(
@@ -153,9 +154,17 @@ class ValidationService:
             "tunnel": service.tunnel,
         }
 
-        val_result = await validator.validate(
-            target_ip=host.ip_address, port=service.port, service_info=service_info
-        )
+        try:
+            val_result = await validator.validate(
+                target_ip=host.ip_address, port=service.port, service_info=service_info
+            )
+        except Exception as exc:
+            validation.status = ValidationStatus.FAILED
+            validation.finished_at = datetime.now(timezone.utc)
+            validation.error_message = f"Validator execution failed: {exc}"
+            await db.commit()
+            await db.refresh(validation)
+            return validation
 
         validation.finished_at = datetime.now(timezone.utc)
         validation.evidence = val_result.evidence
