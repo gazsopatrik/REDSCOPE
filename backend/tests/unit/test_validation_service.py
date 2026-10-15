@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.models.validation import ValidationStatus
+from app.services.audit_service import AuditService
 from app.services.scope_service import ScopeService
 from app.services.validation_service import ValidationService, ValidationServiceError
 from app.scope.validator import ScopeValidator
@@ -59,6 +60,8 @@ async def test_plugin_exception_finishes_validation_task(monkeypatch) -> None:
         ValidationService, "get_validation_by_id", AsyncMock(return_value=validation)
     )
     monkeypatch.setattr(ValidatorRegistry, "get_validator", lambda _id: validator)
+    audit_log = AsyncMock()
+    monkeypatch.setattr(AuditService, "log_event", audit_log)
     monkeypatch.setattr(ScopeService, "get_scopes_by_project", AsyncMock(return_value=[]))
     monkeypatch.setattr(
         ScopeValidator, "evaluate_target_against_scopes",
@@ -72,3 +75,9 @@ async def test_plugin_exception_finishes_validation_task(monkeypatch) -> None:
     assert "probe failed" in result.error_message
     assert db.commit.await_count == 2
     db.refresh.assert_awaited_once_with(validation)
+    audit_log.assert_awaited_once()
+    assert audit_log.await_args.kwargs["details"] == {
+        "status": "failed",
+        "summary": "Validator execution failed unexpectedly.",
+        "passed": False,
+    }
