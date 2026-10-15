@@ -164,6 +164,18 @@ class ValidationService:
             validation.error_message = f"Validator execution failed: {exc}"
             await db.commit()
             await db.refresh(validation)
+            await AuditService.log_event(
+                db=db,
+                action="validation_executed",
+                entity_type="validation",
+                actor=validation.approved_by or "system",
+                entity_id=validation.id,
+                details={
+                    "status": validation.status.value,
+                    "summary": "Validator execution failed unexpectedly.",
+                    "passed": False,
+                },
+            )
             return validation
 
         validation.finished_at = datetime.now(timezone.utc)
