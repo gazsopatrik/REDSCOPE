@@ -81,3 +81,52 @@ async def test_plugin_exception_finishes_validation_task(monkeypatch) -> None:
         "summary": "Validator execution failed unexpectedly.",
         "passed": False,
     }
+
+@pytest.mark.asyncio
+async def test_missing_plugin_finishes_and_audits_validation(monkeypatch) -> None:
+    validation = SimpleNamespace(
+        id="validation-2",
+        finding_id="finding-2",
+        validator_id="removed-validator",
+        status=ValidationStatus.APPROVED,
+        approved_by="auditor",
+        finished_at=None,
+        error_message=None,
+    )
+    row = (
+        SimpleNamespace(),
+        SimpleNamespace(),
+        SimpleNamespace(),
+        SimpleNamespace(project_id="project-1"),
+        SimpleNamespace(target_value="192.0.2.10"),
+    )
+    db = SimpleNamespace(
+        execute=AsyncMock(return_value=SimpleNamespace(first=lambda: row)),
+        commit=AsyncMock(),
+        refresh=AsyncMock(),
+    )
+    audit_log = AsyncMock()
+    monkeypatch.setattr(
+        ValidationService, "get_validation_by_id", AsyncMock(return_value=validation)
+    )
+    monkeypatch.setattr(ValidatorRegistry, "get_validator", lambda _id: None)
+    monkeypatch.setattr(ScopeService, "get_scopes_by_project", AsyncMock(return_value=[]))
+    monkeypatch.setattr(
+        ScopeValidator, "evaluate_target_against_scopes",
+        lambda _target, _scopes: SimpleNamespace(is_allowed=True),
+    )
+    monkeypatch.setattr(AuditService, "log_event", audit_log)
+
+    result = await ValidationService.run_validation(db, validation.id)
+
+    assert result.status == ValidationStatus.FAILED
+    assert result.finished_at is not None
+    assert result.error_message == "Validator plugin missing."
+    db.commit.assert_awaited_once()
+    db.refresh.assert_awaited_once_with(validation)
+    audit_log.assert_awaited_once()
+    assert audit_log.await_args.kwargs["details"] == {
+        "status": "failed",
+        "summary": "Validator plugin missing.",
+        "passed": False,
+    }
