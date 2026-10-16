@@ -139,8 +139,22 @@ class ValidationService:
         validator = ValidatorRegistry.get_validator(validation.validator_id)
         if not validator:
             validation.status = ValidationStatus.FAILED
+            validation.finished_at = datetime.now(timezone.utc)
             validation.error_message = "Validator plugin missing."
             await db.commit()
+            await db.refresh(validation)
+            await AuditService.log_event(
+                db=db,
+                action="validation_executed",
+                entity_type="validation",
+                actor=validation.approved_by or "system",
+                entity_id=validation.id,
+                details={
+                    "status": validation.status.value,
+                    "summary": "Validator plugin missing.",
+                    "passed": False,
+                },
+            )
             return validation
 
         validation.status = ValidationStatus.RUNNING
