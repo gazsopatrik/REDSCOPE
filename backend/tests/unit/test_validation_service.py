@@ -130,3 +130,51 @@ async def test_missing_plugin_finishes_and_audits_validation(monkeypatch) -> Non
         "summary": "Validator plugin missing.",
         "passed": False,
     }
+
+@pytest.mark.asyncio
+async def test_validation_blocks_scanned_host_outside_scope(monkeypatch) -> None:
+    validation = SimpleNamespace(
+        id="validation-3",
+        finding_id="finding-3",
+        validator_id="http-validator",
+        status=ValidationStatus.APPROVED,
+        error_message=None,
+    )
+    host_ip = "203.0.113.10"
+    row = (
+        SimpleNamespace(),
+        SimpleNamespace(),
+        SimpleNamespace(ip_address=host_ip),
+        SimpleNamespace(project_id="project-1"),
+        SimpleNamespace(target_value="authorized.example"),
+    )
+    db = SimpleNamespace(
+        execute=AsyncMock(return_value=SimpleNamespace(first=lambda: row)),
+        commit=AsyncMock(),
+        refresh=AsyncMock(),
+    )
+    validator = SimpleNamespace(validate=AsyncMock())
+    checked_targets = []
+
+    def evaluate(value, _scopes):
+        checked_targets.append(value)
+        return SimpleNamespace(
+            is_allowed=value != host_ip,
+            message="Scanned host IP outside scope",
+        )
+
+    monkeypatch.setattr(
+        ValidationService, "get_validation_by_id", AsyncMock(return_value=validation)
+    )
+    monkeypatch.setattr(ScopeService, "get_scopes_by_project", AsyncMock(return_value=[]))
+    monkeypatch.setattr(ScopeValidator, "evaluate_target_against_scopes", evaluate)
+    monkeypatch.setattr(ValidatorRegistry, "get_validator", lambda _id: validator)
+
+    result = await ValidationService.run_validation(db, validation.id)
+
+    assert checked_targets == ["authorized.example", host_ip]
+    assert result.status == ValidationStatus.BLOCKED
+    assert "Scanned host IP outside scope" in result.error_message
+    validator.validate.assert_not_awaited()
+    db.commit.assert_awaited_once()
+    db.refresh.assert_awaited_once_with(validation)
