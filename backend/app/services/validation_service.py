@@ -127,6 +127,9 @@ class ValidationService:
 
         scopes = await ScopeService.get_scopes_by_project(db, scan.project_id)
         decision = ScopeValidator.evaluate_target_against_scopes(target.target_value, scopes)
+        if decision.is_allowed:
+            # The validator connects to the scanned host IP, which may differ from current DNS.
+            decision = ScopeValidator.evaluate_target_against_scopes(host.ip_address, scopes)
 
         if not decision.is_allowed:
             validation.status = ValidationStatus.BLOCKED
