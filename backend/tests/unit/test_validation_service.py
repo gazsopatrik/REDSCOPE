@@ -138,6 +138,8 @@ async def test_validation_blocks_scanned_host_outside_scope(monkeypatch) -> None
         finding_id="finding-3",
         validator_id="http-validator",
         status=ValidationStatus.APPROVED,
+        approved_by="auditor",
+        finished_at=None,
         error_message=None,
     )
     host_ip = "203.0.113.10"
@@ -154,6 +156,7 @@ async def test_validation_blocks_scanned_host_outside_scope(monkeypatch) -> None
         refresh=AsyncMock(),
     )
     validator = SimpleNamespace(validate=AsyncMock())
+    audit_log = AsyncMock()
     checked_targets = []
 
     def evaluate(value, _scopes):
@@ -169,12 +172,17 @@ async def test_validation_blocks_scanned_host_outside_scope(monkeypatch) -> None
     monkeypatch.setattr(ScopeService, "get_scopes_by_project", AsyncMock(return_value=[]))
     monkeypatch.setattr(ScopeValidator, "evaluate_target_against_scopes", evaluate)
     monkeypatch.setattr(ValidatorRegistry, "get_validator", lambda _id: validator)
+    monkeypatch.setattr(AuditService, "log_event", audit_log)
 
     result = await ValidationService.run_validation(db, validation.id)
 
     assert checked_targets == ["authorized.example", host_ip]
     assert result.status == ValidationStatus.BLOCKED
+    assert result.finished_at is not None
     assert "Scanned host IP outside scope" in result.error_message
     validator.validate.assert_not_awaited()
     db.commit.assert_awaited_once()
     db.refresh.assert_awaited_once_with(validation)
+    audit_log.assert_awaited_once()
+    assert audit_log.await_args.kwargs["action"] == "validation_blocked"
+    assert audit_log.await_args.kwargs["details"]["reason"] == "Scanned host IP outside scope"
