@@ -133,9 +133,18 @@ class ValidationService:
 
         if not decision.is_allowed:
             validation.status = ValidationStatus.BLOCKED
+            validation.finished_at = datetime.now(timezone.utc)
             validation.error_message = f"Validation BLOCKED: Scope check failed prior to execution ({decision.message})."
             await db.commit()
             await db.refresh(validation)
+            await AuditService.log_event(
+                db=db,
+                action="validation_blocked",
+                entity_type="validation",
+                actor=validation.approved_by or "system",
+                entity_id=validation.id,
+                details={"reason": decision.message, "finding_id": validation.finding_id},
+            )
             return validation
 
         # 2. Execute Validator Plugin
