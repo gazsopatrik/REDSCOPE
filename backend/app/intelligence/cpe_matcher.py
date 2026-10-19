@@ -58,7 +58,7 @@ class CPEMatcher:
 
         # Check rule-based mappings
         for key, (vendor, prod_name) in cls.KNOWN_MAPPINGS.items():
-            if key in raw_prod:
+            if re.search(r"(?<![a-z0-9])" + re.escape(key) + r"(?![a-z0-9])", raw_prod):
                 cpe23 = f"cpe:2.3:a:{vendor}:{prod_name}:{clean_version}:*:*:*:*:*:*:*"
                 conf = "high" if version else "medium"
                 return NormalizedServiceInfo(
