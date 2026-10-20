@@ -44,3 +44,14 @@ def test_known_products_require_token_boundaries() -> None:
     )
     assert known.vendor == "openbsd"
     assert known.product == "openssh"
+
+
+def test_malformed_raw_cpe_is_not_exact() -> None:
+    norm = CPEMatcher.normalize_service(
+        product="unknown service",
+        version=None,
+        service_name="unknown",
+        cpe_raw="cpe:/x:vendor:product:1.0",
+    )
+    assert norm.vendor == "generic"
+    assert norm.confidence == "low"
