@@ -38,9 +38,8 @@ class CPEMatcher:
         # 1. If raw CPE string is already provided by Nmap
         if cpe_raw and cpe_raw.startswith("cpe:/"):
             parts = cpe_raw.split(":")
-            if len(parts) >= 5:
-                part_type = parts[1]  # /a, /h, /o
-                part_code = "a" if "a" in part_type else "h" if "h" in part_type else "o"
+            if len(parts) >= 5 and parts[1] in ("/a", "/h", "/o") and parts[2] and parts[3]:
+                part_code = parts[1][1]
                 vendor = parts[2]
                 prod = parts[3]
                 ver = parts[4] if len(parts) > 4 else "*"
