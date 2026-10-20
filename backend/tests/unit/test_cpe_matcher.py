@@ -30,3 +30,17 @@ def test_normalize_raw_cpe() -> None:
     assert norm.vendor == "openbsd"
     assert norm.product == "openssh"
     assert norm.confidence == "exact"
+
+
+def test_known_products_require_token_boundaries() -> None:
+    unrelated = CPEMatcher.normalize_service(
+        product="fakeapache", version="1.0", service_name="http"
+    )
+    assert unrelated.vendor == "generic"
+    assert unrelated.product == "fakeapache"
+
+    known = CPEMatcher.normalize_service(
+        product="OpenSSH_9.3", version="9.3", service_name="ssh"
+    )
+    assert known.vendor == "openbsd"
+    assert known.product == "openssh"
