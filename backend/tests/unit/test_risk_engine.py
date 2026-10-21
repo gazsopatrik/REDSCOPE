@@ -29,3 +29,17 @@ def test_calculate_risk_score_low() -> None:
     )
     assert res.final_score < 40.0
     assert res.severity_label in ("Low", "Informational")
+
+
+def test_calculate_risk_score_clamps_external_scores() -> None:
+    above_range = RiskEngine.calculate_risk_score(cvss_score=15.0, epss_score=2.0)
+    at_maximum = RiskEngine.calculate_risk_score(cvss_score=10.0, epss_score=1.0)
+    below_range = RiskEngine.calculate_risk_score(cvss_score=-4.0, epss_score=-0.5)
+    at_minimum = RiskEngine.calculate_risk_score(cvss_score=0.0, epss_score=0.0)
+
+    assert above_range.final_score == at_maximum.final_score
+    assert above_range.cvss_points == 25.0
+    assert above_range.epss_points == 20.0
+    assert below_range.final_score == at_minimum.final_score
+    assert below_range.cvss_points == 0.0
+    assert below_range.epss_points == 0.0
