@@ -39,12 +39,14 @@ class RiskEngine:
           • Validation Evidence (max 10 pts)
         """
         # 1. CVSS Component (0-10 scale mapped to 25 max pts)
-        cvss_val = cvss_score if cvss_score is not None else 5.0
+        cvss_raw = cvss_score if cvss_score is not None else 5.0
+        cvss_val = min(max(cvss_raw, 0.0), 10.0)
         cvss_pts = (cvss_val / 10.0) * 25.0
 
         # 2. EPSS Component (0.0-1.0 scale mapped to 20 max pts)
-        epss_val = epss_score if epss_score is not None else 0.05
-        epss_pts = min(epss_val * 20.0, 20.0)
+        epss_raw = epss_score if epss_score is not None else 0.05
+        epss_val = min(max(epss_raw, 0.0), 1.0)
+        epss_pts = epss_val * 20.0
 
         # 3. KEV Status (15 pts if actively exploited in the wild)
         kev_pts = 15.0 if is_kev else 0.0
