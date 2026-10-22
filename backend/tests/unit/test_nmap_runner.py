@@ -19,6 +19,10 @@ def test_command_policy_invalid_ports() -> None:
     with pytest.raises(CommandPolicyError):
         CommandPolicy.validate_port_list("70000")
 
+    for malformed in ("22,", ",22", "22,,80"):
+        with pytest.raises(CommandPolicyError):
+            CommandPolicy.validate_port_list(malformed)
+
 
 def test_scan_profile_args_quick() -> None:
     args = ScanProfileBuilder.build_nmap_args(
