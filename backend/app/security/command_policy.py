@@ -25,6 +25,9 @@ class CommandPolicy:
 
         # Validate range values 1-65535
         parts = clean_str.split(",")
+        if any(not part for part in parts):
+            raise CommandPolicyError("Port specification contains an empty entry.")
+
         for part in parts:
             if "-" in part:
                 subparts = part.split("-")
