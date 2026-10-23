@@ -42,7 +42,7 @@ class ScanProfileBuilder:
 
         elif profile == ScanProfile.UDP_COMMON:
             # Common UDP services scan
-            base_args.extend(["-sV", "--top-ports", "20"])
+            base_args.extend(["-sU", "-sV", "--top-ports", "20"])
 
         else:
             base_args.extend(["-sV", "--top-ports", "100"])
