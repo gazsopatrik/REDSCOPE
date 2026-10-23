@@ -36,6 +36,18 @@ def test_scan_profile_args_quick() -> None:
     assert "192.168.1.100" == args[-1]
 
 
+def test_scan_profile_args_udp_common_enables_udp_scan() -> None:
+    args = ScanProfileBuilder.build_nmap_args(
+        profile=ScanProfile.UDP_COMMON,
+        target_value="192.168.1.100",
+        xml_output_path="test_output.xml",
+    )
+
+    assert "-sU" in args
+    assert "-sV" in args
+    assert args[args.index("--top-ports") + 1] == "20"
+
+
 @pytest.mark.asyncio
 async def test_nmap_timeout_kills_and_reaps_process(monkeypatch, tmp_path) -> None:
     class HangingProcess:
