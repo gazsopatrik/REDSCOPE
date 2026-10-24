@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from math import isfinite
 from typing import List, Optional
 from defusedxml import ElementTree as ET
 
@@ -110,7 +111,12 @@ class NmapXMLParser:
                         continue
 
                     protocol = port_node.get("protocol", "tcp")
-                    port_num = int(port_node.get("portid", 0))
+                    try:
+                        port_num = int(port_node.get("portid", ""))
+                    except (TypeError, ValueError):
+                        continue
+                    if not 1 <= port_num <= 65535:
+                        continue
 
                     service_name = None
                     product = None
@@ -128,12 +134,17 @@ class NmapXMLParser:
                         extra_info = service_node.get("extrainfo")
                         tunnel = service_node.get("tunnel")
 
-                        try:
-                            conf_str = service_node.get("conf")
-                            if conf_str:
-                                confidence = float(conf_str) / 10.0
-                        except ValueError:
-                            confidence = 1.0
+                        conf_str = service_node.get("conf")
+                        if conf_str:
+                            try:
+                                parsed_confidence = float(conf_str) / 10.0
+                                confidence = (
+                                    max(0.0, min(1.0, parsed_confidence))
+                                    if isfinite(parsed_confidence)
+                                    else 0.0
+                                )
+                            except ValueError:
+                                confidence = 0.0
 
                         cpe_node = service_node.find("cpe")
                         if cpe_node is not None and cpe_node.text:
