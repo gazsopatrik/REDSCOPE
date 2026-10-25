@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
@@ -40,4 +41,9 @@ async def download_report(
     report = await ReportService.get_report_by_id(db, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-    return FileResponse(path=report.file_path, filename=f"{report.title}.{report.format.value}")
+
+    file_path = Path(report.file_path)
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Report file not found")
+
+    return FileResponse(path=file_path, filename=f"{report.title}{file_path.suffix}")
