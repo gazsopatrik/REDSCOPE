@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Project, Scope, Target, Scan, Finding, Validation, AuditLog } from '../types';
+import { Project, Scope, Target, Scan, Finding, Validation, AuditLog, ReportFormat } from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -25,3 +25,24 @@ export const createScan = async (projectId: string, data: { target_id: string; p
 export const getFindings = async (projectId: string): Promise<Finding[]> => (await api.get(`/projects/${projectId}/findings`)).data;
 
 export const getAuditLogs = async (projectId: string): Promise<AuditLog[]> => (await api.get(`/projects/${projectId}/audit-logs`)).data;
+
+export interface Report {
+  id: string;
+  project_id: string;
+  title: string;
+  format: ReportFormat;
+  created_by: string;
+  created_at: string;
+}
+
+export const getReports = async (projectId: string): Promise<Report[]> =>
+  (await api.get(`/projects/${encodeURIComponent(projectId)}/reports`)).data;
+
+export const createReport = async (
+  projectId: string,
+  data: { title: string; format: ReportFormat },
+): Promise<Report> =>
+  (await api.post(`/projects/${encodeURIComponent(projectId)}/reports`, data)).data;
+
+export const getReportDownloadUrl = (reportId: string): string =>
+  `/api/reports/${encodeURIComponent(reportId)}/download`;
