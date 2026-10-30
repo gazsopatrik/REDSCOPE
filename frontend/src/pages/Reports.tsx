@@ -22,7 +22,7 @@ export const ReportsPage: React.FC = () => {
   const activeProjectId = selectedProjectId || (projects[0]?.id ?? '');
   const activeProject = projects.find((project) => project.id === activeProjectId);
 
-  const { data: reports = [], isLoading: reportsLoading } = useQuery<Report[]>({
+  const { data: reports = [], isLoading: reportsLoading, isError: reportsError, error: reportsFetchError, refetch: refetchReports } = useQuery<Report[]>({
     queryKey: ['reports', activeProjectId],
     queryFn: () => getReports(activeProjectId),
     enabled: Boolean(activeProjectId),
@@ -130,6 +130,11 @@ export const ReportsPage: React.FC = () => {
         <h2 className="card-title">Generated Reports</h2>
         {reportsLoading ? (
           <p style={{ color: 'var(--text-secondary)' }}>Loading reports...</p>
+        ) : reportsError ? (
+          <div role="alert" style={{ color: 'var(--accent-red)' }}>
+            <p>Could not load reports: {(reportsFetchError as Error)?.message ?? 'Unknown error'}</p>
+            <button type="button" onClick={() => void refetchReports()}>Retry</button>
+          </div>
         ) : reports.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)' }}>No reports have been generated for this project.</p>
         ) : (
