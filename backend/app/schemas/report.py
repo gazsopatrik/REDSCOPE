@@ -13,7 +13,6 @@ class ReportRead(BaseModel):
     project_id: str
     title: str
     format: ReportFormat
-    file_path: str
     created_by: str
     created_at: datetime
 
