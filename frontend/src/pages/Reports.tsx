@@ -80,8 +80,9 @@ export const ReportsPage: React.FC = () => {
       </div>
 
       <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Project:</label>
+        <label htmlFor="reports-project" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Project:</label>
         <select
+          id="reports-project"
           value={activeProjectId}
           onChange={(event) => setSelectedProjectId(event.target.value)}
           disabled={projects.length === 0}
