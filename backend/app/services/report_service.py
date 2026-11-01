@@ -106,6 +106,6 @@ class ReportService:
             actor=actor,
             entity_id=report.id,
             project_id=project_id,
-            details={"format": data.format.value, "file_path": file_path},
+            details={"format": data.format.value},
         )
         return report
