@@ -3,10 +3,11 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from app.api.reports import download_report
 from app.models.report import ReportFormat
-from app.schemas.report import ReportRead
+from app.schemas.report import ReportCreate, ReportRead
 from app.services.report_service import ReportService
 
 
@@ -59,3 +60,13 @@ def test_report_response_does_not_expose_internal_file_path() -> None:
 
     assert payload["id"] == "report-id"
     assert "file_path" not in payload
+
+
+@pytest.mark.parametrize("title", ["", "x" * 256])
+def test_report_title_rejects_invalid_lengths(title: str) -> None:
+    with pytest.raises(ValidationError):
+        ReportCreate(title=title)
+
+
+def test_report_title_accepts_database_limit() -> None:
+    assert len(ReportCreate(title="x" * 255).title) == 255
