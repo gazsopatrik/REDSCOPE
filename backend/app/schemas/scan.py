@@ -26,7 +26,6 @@ class ScanRead(BaseModel):
     finished_at: Optional[datetime] = None
     exit_code: Optional[int] = None
     error_message: Optional[str] = None
-    xml_output_path: Optional[str] = None
     created_by: str
     created_at: datetime
     hosts: List[HostRead] = []
