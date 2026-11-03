@@ -24,7 +24,7 @@ export const ScansPage: React.FC = () => {
     queryFn: getAllTargets,
   });
 
-  const projectTargets = allTargets.filter((t) => !activeProjectId || t.project_id === activeProjectId);
+  const projectTargets = allTargets.filter((t) => t.project_id === activeProjectId && t.scope_status === 'allowed');
 
   const { data: scans = [], isLoading } = useQuery<Scan[]>({
     queryKey: ['scans', activeProjectId],
@@ -87,7 +87,10 @@ export const ScansPage: React.FC = () => {
         <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Select Project:</label>
         <select
           value={activeProjectId}
-          onChange={(e) => setSelectedProjectId(e.target.value)}
+          onChange={(e) => {
+            setSelectedProjectId(e.target.value);
+            setTargetId('');
+          }}
           style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: '#fff' }}
         >
           {projects.map((p) => (
@@ -161,7 +164,7 @@ export const ScansPage: React.FC = () => {
                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.375rem', color: 'var(--text-secondary)' }}>Select Authorized Target *</label>
                 {projectTargets.length === 0 ? (
                   <div style={{ padding: '0.75rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: 'var(--accent-red)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <AlertCircle size={16} /> No target hosts exist for this project yet. Please add a target on the Projects page first.
+                    <AlertCircle size={16} /> No authorized targets are available for this project. Add a target and verify its scope on the Targets page first.
                   </div>
                 ) : (
                   <select
