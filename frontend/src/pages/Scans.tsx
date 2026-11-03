@@ -26,7 +26,7 @@ export const ScansPage: React.FC = () => {
 
   const projectTargets = allTargets.filter((t) => t.project_id === activeProjectId && t.scope_status === 'allowed');
 
-  const { data: scans = [], isLoading } = useQuery<Scan[]>({
+  const { data: scans = [], isLoading, isError: scansError, error: scansFetchError, refetch: refetchScans } = useQuery<Scan[]>({
     queryKey: ['scans', activeProjectId],
     queryFn: () => (activeProjectId ? getScans(activeProjectId) : Promise.resolve([])),
     enabled: !!activeProjectId,
@@ -101,6 +101,11 @@ export const ScansPage: React.FC = () => {
 
       {isLoading ? (
         <div style={{ color: 'var(--text-secondary)' }}>Loading scan history...</div>
+      ) : scansError ? (
+        <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
+          <p>Could not load scan history: {(scansFetchError as Error)?.message ?? 'Unknown error'}</p>
+          <button type="button" onClick={() => void refetchScans()}>Retry</button>
+        </div>
       ) : scans.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
           <Activity size={48} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
