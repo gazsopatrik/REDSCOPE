@@ -57,7 +57,10 @@ export const TargetsPage: React.FC = () => {
           <p style={{ color: 'var(--text-secondary)' }}>Pre-execution verification of IP addresses, CIDR blocks, and Hostnames</p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setModalProjectId(selectedProjectId || projects[0]?.id || '');
+            setShowModal(true);
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',
