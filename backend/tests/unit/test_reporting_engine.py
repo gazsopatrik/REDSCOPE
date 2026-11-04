@@ -1,3 +1,4 @@
+import json
 import tempfile
 from pathlib import Path
 from app.reporting.html_report import HTMLReportGenerator
@@ -107,5 +108,24 @@ def test_json_report_generator() -> None:
         content = Path(out).read_text(encoding="utf-8")
         assert "redscope_version" in content
         assert "Acme Security Audit" in content
+    finally:
+        Path(temp_path).unlink(missing_ok=True)
+
+
+def test_json_report_omits_sqlalchemy_state() -> None:
+    data = get_mock_report_data()
+    for collection in ("scopes", "targets", "findings"):
+        data[collection][0]["_sa_instance_state"] = object()
+
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        temp_path = f.name
+
+    try:
+        JSONReportGenerator.generate_json_report(data, temp_path)
+        payload = json.loads(Path(temp_path).read_text(encoding="utf-8"))
+        assert payload["scopes"][0]["value"] == "192.168.1.0/24"
+        assert payload["targets"][0]["target_value"] == "192.168.1.10"
+        assert payload["findings"][0]["title"] == "CVE-2023-44487 HTTP/2 Rapid Reset"
+        assert "_sa_instance_state" not in Path(temp_path).read_text(encoding="utf-8")
     finally:
         Path(temp_path).unlink(missing_ok=True)
