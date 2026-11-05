@@ -147,6 +147,23 @@ class ScanService:
             scan.finished_at = datetime.now(timezone.utc)
             scan.exit_code = exit_code
             scan.xml_output_path = xml_path
+            if not Path(xml_path).is_file() or Path(xml_path).stat().st_size == 0:
+                scan.status = ScanStatus.FAILED
+                scan.error_message = stderr_str.strip()[:500] or (
+                    f"Nmap produced no XML output (exit code {exit_code})."
+                )
+                await db.commit()
+                await AuditService.log_event(
+                    db=db,
+                    action="scan_failed",
+                    entity_type="scan",
+                    actor=actor,
+                    entity_id=scan.id,
+                    project_id=project_id,
+                    details={"exit_code": exit_code, "error": scan.error_message},
+                )
+                return
+
             scan.status = ScanStatus.PARSING
             await db.commit()
 
