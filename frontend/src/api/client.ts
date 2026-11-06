@@ -14,7 +14,15 @@ export const getScopes = async (projectId: string): Promise<Scope[]> => (await a
 export const createScope = async (projectId: string, data: Partial<Scope>): Promise<Scope> => (await api.post(`/projects/${projectId}/scopes`, data)).data;
 export const deleteScope = async (scopeId: string): Promise<void> => await api.delete(`/scopes/${scopeId}`);
 
-export const getAllTargets = async (): Promise<Target[]> => (await api.get('/targets')).data;
+export const getAllTargets = async (): Promise<Target[]> => {
+  const targets: Target[] = [];
+  const pageSize = 100;
+  for (let skip = 0; ; skip += pageSize) {
+    const page: Target[] = (await api.get('/targets', { params: { skip, limit: pageSize } })).data;
+    targets.push(...page);
+    if (page.length < pageSize) return targets;
+  }
+};
 export const getTargets = async (projectId: string): Promise<Target[]> => (await api.get(`/projects/${projectId}/targets`)).data;
 export const createTarget = async (projectId: string, data: Partial<Target>): Promise<Target> => (await api.post(`/projects/${projectId}/targets`, data)).data;
 export const validateTargetScope = async (targetId: string): Promise<Target> => (await api.post(`/targets/${targetId}/validate-scope`)).data;
