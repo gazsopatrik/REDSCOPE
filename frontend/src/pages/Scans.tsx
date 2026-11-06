@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Activity, Play, Shield, Terminal, AlertCircle } from 'lucide-react';
-import { getProjects, getAllTargets, getScans, createScan } from '../api/client';
+import { getProjects, getTargets, getScans, createScan } from '../api/client';
 import { Project, Target, Scan } from '../types';
 
 export const ScansPage: React.FC = () => {
@@ -19,12 +19,13 @@ export const ScansPage: React.FC = () => {
 
   const activeProjectId = selectedProjectId || (projects[0]?.id ?? '');
 
-  const { data: allTargets = [] } = useQuery<Target[]>({
-    queryKey: ['targets', 'all'],
-    queryFn: getAllTargets,
+  const { data: targets = [], isLoading: targetsLoading, isError: targetsError, refetch: refetchTargets } = useQuery<Target[]>({
+    queryKey: ['targets', activeProjectId],
+    queryFn: () => getTargets(activeProjectId),
+    enabled: !!activeProjectId,
   });
 
-  const projectTargets = allTargets.filter((t) => t.project_id === activeProjectId && t.scope_status === 'allowed');
+  const projectTargets = targets.filter((t) => t.scope_status === 'allowed');
 
   const { data: scans = [], isLoading, isError: scansError, error: scansFetchError, refetch: refetchScans } = useQuery<Scan[]>({
     queryKey: ['scans', activeProjectId],
@@ -167,7 +168,13 @@ export const ScansPage: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.375rem', color: 'var(--text-secondary)' }}>Select Authorized Target *</label>
-                {projectTargets.length === 0 ? (
+                {targetsLoading ? (
+                  <div>Loading authorized targets...</div>
+                ) : targetsError ? (
+                  <div role="alert" style={{ color: 'var(--accent-red)' }}>
+                    Could not load targets. <button type="button" onClick={() => void refetchTargets()}>Retry</button>
+                  </div>
+                ) : projectTargets.length === 0 ? (
                   <div style={{ padding: '0.75rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: 'var(--accent-red)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <AlertCircle size={16} /> No authorized targets are available for this project. Add a target and verify its scope on the Targets page first.
                   </div>
