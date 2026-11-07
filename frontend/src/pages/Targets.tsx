@@ -16,7 +16,7 @@ export const TargetsPage: React.FC = () => {
     queryFn: getProjects,
   });
 
-  const { data: allTargets = [], isLoading } = useQuery<TargetType[]>({
+  const { data: allTargets = [], isLoading, isError, refetch } = useQuery<TargetType[]>({
     queryKey: ['targets', 'all'],
     queryFn: getAllTargets,
   });
@@ -95,6 +95,11 @@ export const TargetsPage: React.FC = () => {
 
       {isLoading ? (
         <div style={{ color: 'var(--text-secondary)' }}>Loading target hosts...</div>
+      ) : isError ? (
+        <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
+          <p>Could not load targets.</p>
+          <button type="button" onClick={() => void refetch()}>Retry</button>
+        </div>
       ) : filteredTargets.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
           <TargetIcon size={48} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
