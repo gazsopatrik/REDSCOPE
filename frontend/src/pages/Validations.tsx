@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckSquare, ShieldCheck, Lock, AlertCircle, Play } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 export const ValidationsPage: React.FC = () => {
   return (
@@ -20,6 +20,9 @@ export const ValidationsPage: React.FC = () => {
         </p>
 
         <table className="table" style={{ marginTop: '1.5rem' }}>
+          <caption style={{ textAlign: 'left', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+            Illustrative examples only. This page does not load live validation tasks or submit approvals.
+          </caption>
           <thead>
             <tr>
               <th>Validator Module</th>
@@ -43,23 +46,7 @@ export const ValidationsPage: React.FC = () => {
                 </span>
               </td>
               <td>
-                <button
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.375rem',
-                    padding: '0.4rem 0.875rem',
-                    background: 'var(--accent-green)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Play size={14} /> Approve & Run
-                </button>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Preview only</span>
               </td>
             </tr>
 
