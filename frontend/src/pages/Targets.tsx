@@ -9,6 +9,7 @@ export const TargetsPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [showModal, setShowModal] = useState(false);
   const [targetValue, setTargetValue] = useState('');
+  const [targetType, setTargetType] = useState<'ip' | 'hostname'>('ip');
   const [modalProjectId, setModalProjectId] = useState('');
 
   const { data: projects = [] } = useQuery<Project[]>({
@@ -32,6 +33,7 @@ export const TargetsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['targets'] });
       setShowModal(false);
       setTargetValue('');
+      setTargetType('ip');
     },
   });
 
@@ -46,7 +48,7 @@ export const TargetsPage: React.FC = () => {
     e.preventDefault();
     const pid = modalProjectId || selectedProjectId || projects[0]?.id;
     if (!targetValue || !pid) return;
-    addTargetMutation.mutate({ projectId: pid, data: { target_value: targetValue, target_type: 'ip' } });
+    addTargetMutation.mutate({ projectId: pid, data: { target_value: targetValue, target_type: targetType } });
   };
 
   return (
@@ -181,6 +183,19 @@ export const TargetsPage: React.FC = () => {
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="target-type" style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.375rem', color: 'var(--text-secondary)' }}>Target Type *</label>
+                <select
+                  id="target-type"
+                  value={targetType}
+                  onChange={(e) => setTargetType(e.target.value as 'ip' | 'hostname')}
+                  style={{ width: '100%', padding: '0.625rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-primary)', color: '#fff' }}
+                >
+                  <option value="ip">IP address or CIDR range</option>
+                  <option value="hostname">Hostname</option>
                 </select>
               </div>
 
