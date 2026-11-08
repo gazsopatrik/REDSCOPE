@@ -15,7 +15,7 @@ export const FindingsPage: React.FC = () => {
 
   const activeProjectId = selectedProjectId || (projects[0]?.id ?? '');
 
-  const { data: findings = [], isLoading } = useQuery<Finding[]>({
+  const { data: findings = [], isLoading, isError, refetch } = useQuery<Finding[]>({
     queryKey: ['findings', activeProjectId],
     queryFn: () => (activeProjectId ? getFindings(activeProjectId) : Promise.resolve([])),
     enabled: !!activeProjectId,
@@ -67,6 +67,11 @@ export const FindingsPage: React.FC = () => {
 
       {isLoading ? (
         <div style={{ color: 'var(--text-secondary)' }}>Loading findings...</div>
+      ) : isError ? (
+        <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
+          <p>Could not load findings.</p>
+          <button type="button" onClick={() => void refetch()}>Retry</button>
+        </div>
       ) : filteredFindings.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
           <CheckCircle size={48} color="var(--accent-green)" style={{ marginBottom: '1rem' }} />
