@@ -61,6 +61,7 @@ export const TargetsPage: React.FC = () => {
         <button
           onClick={() => {
             setModalProjectId(selectedProjectId || projects[0]?.id || '');
+            addTargetMutation.reset();
             setShowModal(true);
           }}
           style={{
@@ -172,6 +173,11 @@ export const TargetsPage: React.FC = () => {
           <div className="card" style={{ width: '450px', background: 'var(--bg-secondary)' }}>
             <h2 className="card-title">Add Target Host</h2>
             <form onSubmit={handleAddTarget} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {addTargetMutation.isError && (
+                <div role="alert" style={{ color: 'var(--accent-red)' }}>
+                  Could not add target. Check the value and try again.
+                </div>
+              )}
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.375rem', color: 'var(--text-secondary)' }}>Security Project *</label>
                 <select
@@ -213,7 +219,7 @@ export const TargetsPage: React.FC = () => {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowModal(false)} style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--border-light)', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ padding: '0.5rem 1rem', background: 'var(--accent-red)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>Add Target</button>
+                <button type="submit" disabled={addTargetMutation.isPending} style={{ padding: '0.5rem 1rem', background: 'var(--accent-red)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: addTargetMutation.isPending ? 'not-allowed' : 'pointer' }}>{addTargetMutation.isPending ? 'Adding...' : 'Add Target'}</button>
               </div>
             </form>
           </div>
