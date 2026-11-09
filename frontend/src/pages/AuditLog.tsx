@@ -7,7 +7,7 @@ import { Project, AuditLog } from '../types';
 export const AuditLogPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
-  const { data: projects = [], isError: projectsError, refetch: retryProjects } = useQuery<Project[]>({
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError, refetch: retryProjects } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: getProjects,
   });
@@ -40,7 +40,9 @@ export const AuditLogPage: React.FC = () => {
         </select>
       </div>
 
-      {projectsError ? (
+      {projectsLoading ? (
+        <div style={{ color: 'var(--text-secondary)' }}>Loading projects...</div>
+      ) : projectsError ? (
         <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
           <p>Could not load projects.</p>
           <button type="button" onClick={() => void retryProjects()}>Retry</button>
