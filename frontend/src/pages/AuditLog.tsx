@@ -7,14 +7,14 @@ import { Project, AuditLog } from '../types';
 export const AuditLogPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
-  const { data: projects = [] } = useQuery<Project[]>({
+  const { data: projects = [], isError: projectsError, refetch: retryProjects } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: getProjects,
   });
 
   const activeProjectId = selectedProjectId || (projects[0]?.id ?? '');
 
-  const { data: auditLogs = [], isLoading } = useQuery<AuditLog[]>({
+  const { data: auditLogs = [], isLoading, isError: auditError, refetch: retryAuditLogs } = useQuery<AuditLog[]>({
     queryKey: ['auditLogs', activeProjectId],
     queryFn: () => (activeProjectId ? getAuditLogs(activeProjectId) : Promise.resolve([])),
     enabled: !!activeProjectId,
@@ -40,8 +40,22 @@ export const AuditLogPage: React.FC = () => {
         </select>
       </div>
 
-      {isLoading ? (
+      {projectsError ? (
+        <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
+          <p>Could not load projects.</p>
+          <button type="button" onClick={() => void retryProjects()}>Retry</button>
+        </div>
+      ) : !activeProjectId ? (
+        <div className="card">No projects available. Create a project to view its audit log.</div>
+      ) : isLoading ? (
         <div style={{ color: 'var(--text-secondary)' }}>Loading audit log records...</div>
+      ) : auditError ? (
+        <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
+          <p>Could not load audit log records.</p>
+          <button type="button" onClick={() => void retryAuditLogs()}>Retry</button>
+        </div>
+      ) : auditLogs.length === 0 ? (
+        <div className="card">No audit log records for this project yet.</div>
       ) : (
         <div className="card">
           <table className="table">
