@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ScrollText, User, Clock, ShieldCheck } from 'lucide-react';
+import { User } from 'lucide-react';
 import { getProjects, getAuditLogs } from '../api/client';
 import { Project, AuditLog } from '../types';
 
@@ -23,8 +23,8 @@ export const AuditLogPage: React.FC = () => {
   return (
     <div className="page-container">
       <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem' }}>Immutable Audit Log</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Cryptographically timestamped trail of all user actions, scope checks, and scan events</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem' }}>Audit Log</h1>
+        <p style={{ color: 'var(--text-secondary)' }}>Recorded project events and scope checks. Showing up to 100 recent entries.</p>
       </div>
 
       <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -47,7 +47,7 @@ export const AuditLogPage: React.FC = () => {
           <table className="table">
             <thead>
               <tr>
-                <th>Timestamp (UTC)</th>
+                <th>Timestamp (local time)</th>
                 <th>Actor</th>
                 <th>Action</th>
                 <th>Entity Type</th>
