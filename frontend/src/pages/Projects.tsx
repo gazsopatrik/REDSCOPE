@@ -21,6 +21,7 @@ export const ProjectsPage: React.FC = () => {
 
   // Form states for Target inside Project Drawer
   const [targetValue, setTargetValue] = useState('');
+  const [targetType, setTargetType] = useState<'ip' | 'hostname'>('ip');
 
   const { data: projects = [], isLoading } = useQuery<Project[]>({
     queryKey: ['projects'],
@@ -76,6 +77,7 @@ export const ProjectsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['targets', selectedProject?.id] });
       queryClient.invalidateQueries({ queryKey: ['targets'] });
       setTargetValue('');
+      setTargetType('ip');
     },
   });
 
@@ -112,7 +114,7 @@ export const ProjectsPage: React.FC = () => {
     if (!targetValue || !selectedProject) return;
     addTargetMutation.mutate({
       target_value: targetValue,
-      target_type: 'ip',
+      target_type: targetType,
     });
   };
 
@@ -355,15 +357,24 @@ export const ProjectsPage: React.FC = () => {
             <div className="card" style={{ background: 'var(--bg-primary)' }}>
               <h3 className="card-title" style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Project Target Hosts</h3>
               
-              <form onSubmit={handleAddTarget} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              <form onSubmit={handleAddTarget} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                 <input
                   type="text"
                   required
-                  placeholder="Target IP / Hostname (e.g. 192.168.1.50)"
+                  placeholder={targetType === 'ip' ? 'e.g. 192.168.1.50' : 'e.g. server.example.com'}
                   value={targetValue}
                   onChange={(e) => setTargetValue(e.target.value)}
                   style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', color: '#fff' }}
                 />
+                <select
+                  aria-label="Target type"
+                  value={targetType}
+                  onChange={(e) => setTargetType(e.target.value as 'ip' | 'hostname')}
+                  style={{ padding: '0.5rem', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', color: '#fff' }}
+                >
+                  <option value="ip">IP Address</option>
+                  <option value="hostname">Hostname</option>
+                </select>
                 <button type="submit" style={{ padding: '0.5rem 0.875rem', background: 'var(--accent-blue)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
                   Add Target
                 </button>
