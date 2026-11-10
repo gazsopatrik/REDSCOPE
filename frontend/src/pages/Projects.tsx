@@ -266,8 +266,9 @@ export const ProjectsPage: React.FC = () => {
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowCreateModal(false)} style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--border-light)', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ padding: '0.5rem 1rem', background: 'var(--accent-red)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>Create Project</button>
+                <button type="submit" disabled={createProjMutation.isPending} style={{ padding: '0.5rem 1rem', background: 'var(--accent-red)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>{createProjMutation.isPending ? 'Creating...' : 'Create Project'}</button>
               </div>
+              {createProjMutation.isError && <p role="alert" style={{ color: 'var(--accent-red)' }}>Could not create project. Check the details and retry.</p>}
             </form>
           </div>
         </div>
@@ -328,10 +329,12 @@ export const ProjectsPage: React.FC = () => {
                   Exclusion Rule
                 </label>
 
-                <button type="submit" style={{ padding: '0.5rem 0.875rem', background: 'var(--accent-red)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
-                  Add Scope Rule
+                <button type="submit" disabled={addScopeMutation.isPending} style={{ padding: '0.5rem 0.875rem', background: 'var(--accent-red)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
+                  {addScopeMutation.isPending ? 'Adding...' : 'Add Scope Rule'}
                 </button>
               </form>
+              {addScopeMutation.isError && <p role="alert" style={{ color: 'var(--accent-red)' }}>Could not add scope rule. Check the value and retry.</p>}
+              {deleteScopeMutation.isError && <p role="alert" style={{ color: 'var(--accent-red)' }}>Could not delete scope rule. Please retry.</p>}
 
               {projectScopes.length === 0 ? (
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No scope rules defined. Add a CIDR or IP to authorize scanning.</div>
@@ -380,10 +383,11 @@ export const ProjectsPage: React.FC = () => {
                   <option value="ip">IP Address</option>
                   <option value="hostname">Hostname</option>
                 </select>
-                <button type="submit" style={{ padding: '0.5rem 0.875rem', background: 'var(--accent-blue)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
-                  Add Target
+                <button type="submit" disabled={addTargetMutation.isPending} style={{ padding: '0.5rem 0.875rem', background: 'var(--accent-blue)', border: 'none', color: '#fff', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
+                  {addTargetMutation.isPending ? 'Adding...' : 'Add Target'}
                 </button>
               </form>
+              {addTargetMutation.isError && <p role="alert" style={{ color: 'var(--accent-red)' }}>Could not add target. Check the value and retry.</p>}
 
               {projectTargets.length === 0 ? (
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No target hosts added yet.</div>
