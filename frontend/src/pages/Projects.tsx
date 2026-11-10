@@ -23,7 +23,7 @@ export const ProjectsPage: React.FC = () => {
   const [targetValue, setTargetValue] = useState('');
   const [targetType, setTargetType] = useState<'ip' | 'hostname'>('ip');
 
-  const { data: projects = [], isLoading } = useQuery<Project[]>({
+  const { data: projects = [], isLoading, isError: projectsError, refetch: retryProjects } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: getProjects,
   });
@@ -147,6 +147,11 @@ export const ProjectsPage: React.FC = () => {
 
       {isLoading ? (
         <div style={{ color: 'var(--text-secondary)' }}>Loading projects...</div>
+      ) : projectsError ? (
+        <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
+          <p>Could not load projects.</p>
+          <button type="button" onClick={() => void retryProjects()}>Retry</button>
+        </div>
       ) : projects.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
           <Shield size={48} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
