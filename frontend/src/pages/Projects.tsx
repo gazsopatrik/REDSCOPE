@@ -395,6 +395,7 @@ export const ProjectsPage: React.FC = () => {
               </form>
               {addTargetMutation.isError && <p role="alert" style={{ color: 'var(--accent-red)' }}>Could not add target. Check the value and retry.</p>}
 
+              {validateTargetMutation.isError && <p role="alert" style={{ color: 'var(--accent-red)' }}>Could not verify target scope. Please retry.</p>}
               {targetsLoading ? (
                 <div>Loading project targets...</div>
               ) : targetsError ? (
@@ -417,10 +418,11 @@ export const ProjectsPage: React.FC = () => {
                         </span>
                         <button
                           onClick={() => validateTargetMutation.mutate(t.id)}
+                          disabled={validateTargetMutation.isPending}
                           title="Re-verify Scope"
                           style={{ background: 'transparent', border: '1px solid var(--border-light)', color: '#fff', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                         >
-                          <RefreshCw size={12} /> Check Scope
+                          <RefreshCw size={12} /> {validateTargetMutation.isPending && validateTargetMutation.variables === t.id ? 'Checking...' : 'Check Scope'}
                         </button>
                       </div>
                     </div>
