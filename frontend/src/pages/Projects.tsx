@@ -29,13 +29,13 @@ export const ProjectsPage: React.FC = () => {
   });
 
   // Queries for selected project scopes & targets
-  const { data: projectScopes = [] } = useQuery<Scope[]>({
+  const { data: projectScopes = [], isLoading: scopesLoading, isError: scopesError, refetch: retryScopes } = useQuery<Scope[]>({
     queryKey: ['scopes', selectedProject?.id],
     queryFn: () => (selectedProject ? getScopes(selectedProject.id) : Promise.resolve([])),
     enabled: !!selectedProject,
   });
 
-  const { data: projectTargets = [] } = useQuery<TargetType[]>({
+  const { data: projectTargets = [], isLoading: targetsLoading, isError: targetsError, refetch: retryTargets } = useQuery<TargetType[]>({
     queryKey: ['targets', selectedProject?.id],
     queryFn: () => (selectedProject ? getTargets(selectedProject.id) : Promise.resolve([])),
     enabled: !!selectedProject,
@@ -336,7 +336,13 @@ export const ProjectsPage: React.FC = () => {
               {addScopeMutation.isError && <p role="alert" style={{ color: 'var(--accent-red)' }}>Could not add scope rule. Check the value and retry.</p>}
               {deleteScopeMutation.isError && <p role="alert" style={{ color: 'var(--accent-red)' }}>Could not delete scope rule. Please retry.</p>}
 
-              {projectScopes.length === 0 ? (
+              {scopesLoading ? (
+                <div>Loading scope rules...</div>
+              ) : scopesError ? (
+                <div role="alert" style={{ color: 'var(--accent-red)' }}>
+                  Could not load scope rules. <button type="button" onClick={() => void retryScopes()}>Retry</button>
+                </div>
+              ) : projectScopes.length === 0 ? (
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No scope rules defined. Add a CIDR or IP to authorize scanning.</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -389,7 +395,13 @@ export const ProjectsPage: React.FC = () => {
               </form>
               {addTargetMutation.isError && <p role="alert" style={{ color: 'var(--accent-red)' }}>Could not add target. Check the value and retry.</p>}
 
-              {projectTargets.length === 0 ? (
+              {targetsLoading ? (
+                <div>Loading project targets...</div>
+              ) : targetsError ? (
+                <div role="alert" style={{ color: 'var(--accent-red)' }}>
+                  Could not load project targets. <button type="button" onClick={() => void retryTargets()}>Retry</button>
+                </div>
+              ) : projectTargets.length === 0 ? (
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No target hosts added yet.</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
