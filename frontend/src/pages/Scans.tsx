@@ -33,8 +33,9 @@ export const ScansPage: React.FC = () => {
     enabled: !!activeProjectId,
     refetchInterval: (query) => {
       const data = query.state.data;
-      const isRunning = data && data.some((s: Scan) => s.status === 'running' || s.status === 'parsing');
-      return isRunning ? 2000 : false;
+      const isInProgress = data && data.some((s: Scan) =>
+        ['queued', 'running', 'parsing', 'analyzing'].includes(s.status));
+      return isInProgress ? 2000 : false;
     },
   });
 
