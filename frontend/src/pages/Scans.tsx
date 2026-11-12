@@ -12,7 +12,7 @@ export const ScansPage: React.FC = () => {
   const [profile, setProfile] = useState<string>('standard_service');
   const [customPorts, setCustomPorts] = useState<string>('');
 
-  const { data: projects = [] } = useQuery<Project[]>({
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError, refetch: retryProjects } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: getProjects,
   });
@@ -67,6 +67,7 @@ export const ScansPage: React.FC = () => {
             launchMutation.reset();
             setShowModal(true);
           }}
+          disabled={projectsLoading || projectsError || projects.length === 0}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -101,7 +102,16 @@ export const ScansPage: React.FC = () => {
         </select>
       </div>
 
-      {isLoading ? (
+      {projectsLoading ? (
+        <div style={{ color: 'var(--text-secondary)' }}>Loading projects...</div>
+      ) : projectsError ? (
+        <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
+          <p>Could not load projects.</p>
+          <button type="button" onClick={() => void retryProjects()}>Retry</button>
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="card">Create a project before launching or viewing scans.</div>
+      ) : isLoading ? (
         <div style={{ color: 'var(--text-secondary)' }}>Loading scan history...</div>
       ) : scansError ? (
         <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
