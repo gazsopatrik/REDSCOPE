@@ -74,6 +74,7 @@ export interface Scan {
   profile: ScanProfile;
   status: ScanStatus;
   command_preview?: string;
+  error_message?: string | null;
   created_by: string;
   created_at: string;
   hosts: Host[];

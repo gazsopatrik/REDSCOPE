@@ -135,6 +135,7 @@ export const ScansPage: React.FC = () => {
                 <th>Target ID</th>
                 <th>Command Preview</th>
                 <th>Status</th>
+                <th>Failure reason</th>
                 <th>Hosts Discovered</th>
                 <th>Started At</th>
               </tr>
@@ -153,6 +154,9 @@ export const ScansPage: React.FC = () => {
                     <span className="badge" style={{ background: s.status === 'completed' ? 'rgba(16,185,129,0.15)' : s.status === 'running' ? 'rgba(59,130,246,0.15)' : s.status === 'parsing' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)', color: s.status === 'completed' ? 'var(--accent-green)' : s.status === 'running' ? 'var(--accent-blue)' : s.status === 'parsing' ? '#f59e0b' : 'var(--accent-red)' }}>
                       {s.status.toUpperCase()}
                     </span>
+                  </td>
+                  <td style={{ maxWidth: '280px', overflowWrap: 'anywhere', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    {s.status === 'failed' ? (s.error_message || 'No diagnostic available') : '—'}
                   </td>
                   <td>{s.hosts?.length ?? 0} host(s)</td>
                   <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
