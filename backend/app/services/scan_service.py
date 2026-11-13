@@ -137,6 +137,15 @@ class ScanService:
                     scan.finished_at = datetime.now(timezone.utc)
                     scan.error_message = f"Subprocess error: {str(run_err)}"
                     await db.commit()
+                    await AuditService.log_event(
+                        db=db,
+                        action="scan_failed",
+                        entity_type="scan",
+                        actor=actor,
+                        entity_id=scan.id,
+                        project_id=project_id,
+                        details={"error": scan.error_message},
+                    )
             return
 
         async with AsyncSessionLocal() as db:
