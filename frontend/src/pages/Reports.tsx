@@ -14,7 +14,7 @@ export const ReportsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
-  const { data: projects = [] } = useQuery<Project[]>({
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError, error: projectsFetchError, refetch: refetchProjects } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: getProjects,
   });
@@ -88,12 +88,19 @@ export const ReportsPage: React.FC = () => {
           disabled={projects.length === 0}
           style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: '#fff' }}
         >
-          {projects.length === 0 && <option value="">No projects available</option>}
+          {projects.length === 0 && <option value="">{projectsLoading ? 'Loading projects...' : projectsError ? 'Could not load projects' : 'No projects available'}</option>}
           {projects.map((project) => (
             <option key={project.id} value={project.id}>{project.name}</option>
           ))}
         </select>
       </div>
+
+      {projectsError && (
+        <div role="alert" style={{ marginBottom: '1rem', color: 'var(--accent-red)' }}>
+          <p>Could not load projects: {(projectsFetchError as Error)?.message ?? 'Unknown error'}</p>
+          <button type="button" onClick={() => void refetchProjects()}>Retry</button>
+        </div>
+      )}
 
       {generateMutation.isError && (
         <div style={{ marginBottom: '1rem', padding: '0.75rem', background: 'rgba(239,68,68,0.15)', border: '1px solid var(--accent-red)', borderRadius: '6px', color: 'var(--accent-red)' }}>
