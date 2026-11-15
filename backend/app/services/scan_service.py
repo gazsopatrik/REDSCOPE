@@ -227,6 +227,19 @@ class ScanService:
                 )
 
             except Exception as parse_err:
-                scan.status = ScanStatus.FAILED
-                scan.error_message = f"Scan error: {str(parse_err)}"
-                await db.commit()
+                # Discard any hosts/services flushed before the failure.
+                await db.rollback()
+                scan = await ScanService.get_scan_by_id(db, scan_id)
+                if scan:
+                    scan.status = ScanStatus.FAILED
+                    scan.error_message = f"Scan error: {str(parse_err)}"
+                    await db.commit()
+                    await AuditService.log_event(
+                        db=db,
+                        action="scan_failed",
+                        entity_type="scan",
+                        actor=actor,
+                        entity_id=scan.id,
+                        project_id=project_id,
+                        details={"error": scan.error_message},
+                    )
