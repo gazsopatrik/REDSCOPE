@@ -216,16 +216,6 @@ class ScanService:
                 scan.status = ScanStatus.COMPLETED
                 await db.commit()
 
-                await AuditService.log_event(
-                    db=db,
-                    action="scan_completed",
-                    entity_type="scan",
-                    actor=actor,
-                    entity_id=scan.id,
-                    project_id=project_id,
-                    details={"hosts_found": len(parsed_result.hosts)},
-                )
-
             except Exception as parse_err:
                 # Discard any hosts/services flushed before the failure.
                 await db.rollback()
@@ -243,3 +233,15 @@ class ScanService:
                         project_id=project_id,
                         details={"error": scan.error_message},
                     )
+
+            else:
+                # An audit-log failure must not turn an already committed scan into a failed scan.
+                await AuditService.log_event(
+                    db=db,
+                    action="scan_completed",
+                    entity_type="scan",
+                    actor=actor,
+                    entity_id=scan.id,
+                    project_id=project_id,
+                    details={"hosts_found": len(parsed_result.hosts)},
+                )

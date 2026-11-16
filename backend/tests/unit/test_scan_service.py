@@ -189,3 +189,57 @@ async def test_parse_failure_rolls_back_partial_hosts_and_records_failure(monkey
     assert scan.status == ScanStatus.FAILED
     assert scan.error_message == "Scan error: target lookup failed"
     assert [event["action"] for event in audit_events] == ["scan_failed"]
+
+
+@pytest.mark.asyncio
+async def test_audit_failure_does_not_reclassify_completed_scan(monkeypatch, tmp_path) -> None:
+    xml_path = tmp_path / "scan.xml"
+    xml_path.write_text("<nmaprun/>", encoding="utf-8")
+    scan = SimpleNamespace(id="scan-1", status=ScanStatus.RUNNING, error_message=None)
+
+    class FakeSession:
+        def __init__(self) -> None:
+            self.rollbacks = 0
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def commit(self) -> None:
+            pass
+
+        async def rollback(self) -> None:
+            self.rollbacks += 1
+
+    db = FakeSession()
+
+    async def run_scan(**_kwargs):
+        return 0, str(xml_path), "", ""
+
+    async def get_scan(_db, _scan_id):
+        return scan
+
+    async def get_target(_db, _target_id):
+        return None
+
+    async def fail_audit(**_kwargs):
+        raise RuntimeError("audit unavailable")
+
+    monkeypatch.setattr(NmapRunner, "run_scan_async", run_scan)
+    monkeypatch.setattr(ScanService, "get_scan_by_id", get_scan)
+    monkeypatch.setattr(NmapXMLParser, "parse_xml_file", lambda _path: SimpleNamespace(hosts=[]))
+    monkeypatch.setattr("app.services.scan_service.TargetService.get_target_by_id", get_target)
+    monkeypatch.setattr(AuditService, "log_event", fail_audit)
+    monkeypatch.setattr("app.services.scan_service.AsyncSessionLocal", lambda: db)
+
+    with pytest.raises(RuntimeError, match="audit unavailable"):
+        await ScanService._execute_scan_background(
+            scan_id="scan-1", target_id="target-1", project_id="project-1",
+            target_value="192.0.2.1", profile=ScanProfile.QUICK_DISCOVERY,
+        )
+
+    assert scan.status == ScanStatus.COMPLETED
+    assert scan.error_message is None
+    assert db.rollbacks == 0
