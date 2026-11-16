@@ -8,7 +8,7 @@ export const FindingsPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
 
-  const { data: projects = [] } = useQuery<Project[]>({
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError, error: projectsFetchError, refetch: refetchProjects } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: getProjects,
   });
@@ -36,12 +36,15 @@ export const FindingsPage: React.FC = () => {
 
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Project:</label>
+          <label htmlFor="findings-project" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Project:</label>
           <select
+            id="findings-project"
             value={activeProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
+            disabled={projects.length === 0}
             style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: '#fff' }}
           >
+            {projects.length === 0 && <option value="">{projectsLoading ? 'Loading projects...' : projectsError ? 'Could not load projects' : 'No projects available'}</option>}
             {projects.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
@@ -65,7 +68,16 @@ export const FindingsPage: React.FC = () => {
         </div>
       </div>
 
-      {isLoading ? (
+      {projectsLoading ? (
+        <div style={{ color: 'var(--text-secondary)' }}>Loading projects...</div>
+      ) : projectsError ? (
+        <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
+          <p>Could not load projects: {(projectsFetchError as Error)?.message ?? 'Unknown error'}</p>
+          <button type="button" onClick={() => void refetchProjects()}>Retry</button>
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="card">No projects available. Create a project to view findings.</div>
+      ) : isLoading ? (
         <div style={{ color: 'var(--text-secondary)' }}>Loading findings...</div>
       ) : isError ? (
         <div role="alert" className="card" style={{ color: 'var(--accent-red)' }}>
