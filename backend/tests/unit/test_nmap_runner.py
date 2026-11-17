@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 import pytest
 from app.models.scan import ScanProfile
@@ -82,3 +83,21 @@ async def test_nmap_timeout_kills_and_reaps_process(monkeypatch, tmp_path) -> No
     assert "timed out" in stderr
     assert process.killed is True
     assert process.communicate_calls == 2
+
+
+@pytest.mark.asyncio
+async def test_missing_nmap_fails_without_creating_simulated_results(monkeypatch, tmp_path) -> None:
+    async def missing_binary(*_args, **_kwargs):
+        raise FileNotFoundError("nmap")
+
+    monkeypatch.setattr("app.scanners.nmap_runner.asyncio.create_subprocess_exec", missing_binary)
+    monkeypatch.setattr("app.scanners.nmap_runner.settings.SCANS_DIR", tmp_path)
+
+    exit_code, xml_path, stdout, stderr = await NmapRunner.run_scan_async(
+        "192.0.2.1", ScanProfile.QUICK_DISCOVERY
+    )
+
+    assert exit_code == -1
+    assert stdout == ""
+    assert "not found" in stderr
+    assert not Path(xml_path).exists()
