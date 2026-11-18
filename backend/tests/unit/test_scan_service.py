@@ -243,3 +243,49 @@ async def test_audit_failure_does_not_reclassify_completed_scan(monkeypatch, tmp
     assert scan.status == ScanStatus.COMPLETED
     assert scan.error_message is None
     assert db.rollbacks == 0
+
+
+@pytest.mark.asyncio
+async def test_nonzero_nmap_exit_fails_even_with_xml(monkeypatch, tmp_path) -> None:
+    xml_path = tmp_path / "partial.xml"
+    xml_path.write_text("<nmaprun/>", encoding="utf-8")
+    scan = SimpleNamespace(id="scan-1", status=ScanStatus.RUNNING, error_message=None)
+    audit_events = []
+
+    class FakeSession:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def commit(self) -> None:
+            pass
+
+    async def run_scan(**_kwargs):
+        return 2, str(xml_path), "", "Nmap reported an error"
+
+    async def get_scan(_db, _scan_id):
+        return scan
+
+    async def log_event(**kwargs):
+        audit_events.append(kwargs)
+
+    def parse_xml(_path):
+        raise AssertionError("Failed Nmap output must not be parsed as a completed scan")
+
+    monkeypatch.setattr(NmapRunner, "run_scan_async", run_scan)
+    monkeypatch.setattr(ScanService, "get_scan_by_id", get_scan)
+    monkeypatch.setattr(AuditService, "log_event", log_event)
+    monkeypatch.setattr(NmapXMLParser, "parse_xml_file", parse_xml)
+    monkeypatch.setattr("app.services.scan_service.AsyncSessionLocal", FakeSession)
+
+    await ScanService._execute_scan_background(
+        scan_id="scan-1", target_id="target-1", project_id="project-1",
+        target_value="192.0.2.1", profile=ScanProfile.QUICK_DISCOVERY,
+    )
+
+    assert scan.status == ScanStatus.FAILED
+    assert scan.exit_code == 2
+    assert scan.error_message == "Nmap reported an error"
+    assert [event["action"] for event in audit_events] == ["scan_failed"]

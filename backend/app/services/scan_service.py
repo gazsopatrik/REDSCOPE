@@ -173,6 +173,21 @@ class ScanService:
                 )
                 return
 
+            if exit_code != 0:
+                scan.status = ScanStatus.FAILED
+                scan.error_message = stderr_str.strip()[:500] or f"Nmap exited with code {exit_code}."
+                await db.commit()
+                await AuditService.log_event(
+                    db=db,
+                    action="scan_failed",
+                    entity_type="scan",
+                    actor=actor,
+                    entity_id=scan.id,
+                    project_id=project_id,
+                    details={"exit_code": exit_code, "error": scan.error_message},
+                )
+                return
+
             scan.status = ScanStatus.PARSING
             await db.commit()
 
