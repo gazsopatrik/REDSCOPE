@@ -47,7 +47,7 @@ class NmapXMLParser:
 
         for host_node in root.findall("host"):
             status_node = host_node.find("status")
-            state = status_node.get("state", "up") if status_node is not None else "up"
+            state = status_node.get("state", "unknown") if status_node is not None else "unknown"
 
             # Extract IP and MAC address
             ip_address = None
@@ -101,11 +101,7 @@ class NmapXMLParser:
             if ports_node is not None:
                 for port_node in ports_node.findall("port"):
                     port_state_node = port_node.find("state")
-                    port_state = (
-                        port_state_node.get("state", "open")
-                        if port_state_node is not None
-                        else "open"
-                    )
+                    port_state = port_state_node.get("state") if port_state_node is not None else None
 
                     if port_state != "open":
                         continue

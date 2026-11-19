@@ -99,3 +99,20 @@ def test_malformed_service_metadata_does_not_abort_host_parsing() -> None:
     assert [service.port for service in services] == [443, 8443]
     assert services[0].confidence == 0.0
     assert services[1].confidence == 1.0
+
+
+def test_missing_status_does_not_invent_up_host_or_open_port() -> None:
+    xml = """<nmaprun>
+      <host>
+        <address addr="192.0.2.10" addrtype="ipv4"/>
+        <ports>
+          <port protocol="tcp" portid="22"><service name="ssh"/></port>
+          <port protocol="tcp" portid="80"><state state="closed"/></port>
+          <port protocol="tcp" portid="443"><state state="open"/><service name="https"/></port>
+        </ports>
+      </host>
+    </nmaprun>"""
+
+    parsed = parse_temp_xml(xml)
+    assert parsed.hosts[0].state == "unknown"
+    assert [service.port for service in parsed.hosts[0].services] == [443]
