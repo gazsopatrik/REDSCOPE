@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
@@ -46,4 +47,5 @@ async def download_report(
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Report file not found")
 
-    return FileResponse(path=file_path, filename=f"{report.title}{file_path.suffix}")
+    safe_title = re.sub(r"[\\/\x00-\x1f\x7f]", "_", report.title).strip(" .") or "report"
+    return FileResponse(path=file_path, filename=f"{safe_title}{file_path.suffix}")

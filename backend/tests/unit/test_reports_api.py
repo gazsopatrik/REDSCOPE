@@ -31,6 +31,21 @@ async def test_download_report_uses_generated_file_extension(monkeypatch, tmp_pa
 
 
 @pytest.mark.asyncio
+async def test_download_report_sanitizes_title_for_filename(monkeypatch, tmp_path) -> None:
+    report_path = tmp_path / "report-id.md"
+    report_path.write_text("# Report", encoding="utf-8")
+    report = SimpleNamespace(file_path=str(report_path), title=" ../Quarterly/Report\n")
+
+    async def get_report_by_id(_db, _report_id):
+        return report
+
+    monkeypatch.setattr(ReportService, "get_report_by_id", staticmethod(get_report_by_id))
+    response = await download_report("report-id", db=object())
+    assert response.filename == "_Quarterly_Report_.md"
+    assert "\n" not in response.headers["content-disposition"]
+
+
+@pytest.mark.asyncio
 async def test_download_report_rejects_missing_file(monkeypatch, tmp_path) -> None:
     report = SimpleNamespace(
         file_path=str(tmp_path / "missing.json"),
