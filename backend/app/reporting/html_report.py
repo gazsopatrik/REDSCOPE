@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict
 from jinja2 import Environment, select_autoescape
@@ -88,11 +89,15 @@ class HTMLReportGenerator:
     def generate_html_report(data: Dict[str, Any], output_path: str) -> str:
         environment = Environment(autoescape=select_autoescape(default_for_string=True))
         template = environment.from_string(HTML_TEMPLATE_STR)
+        findings = [
+            {key: value.value if isinstance(value, Enum) else value for key, value in finding.items()}
+            for finding in data["findings"]
+        ]
         rendered_html = template.render(
             project=data["project"],
             scopes=data["scopes"],
             targets=data["targets"],
-            findings=data["findings"],
+            findings=findings,
             generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
         )
 

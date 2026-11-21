@@ -4,9 +4,13 @@ from pathlib import Path
 from typing import Any, Dict
 
 
+def enum_value(value: Any) -> Any:
+    return getattr(value, "value", value)
+
+
 def markdown_safe(value: Any) -> str:
     """Escape raw HTML while preserving ordinary Markdown punctuation."""
-    return escape(str(value), quote=False)
+    return escape(str(enum_value(value)), quote=False)
 
 
 class MarkdownReportGenerator:
@@ -35,8 +39,8 @@ class MarkdownReportGenerator:
 
 - **Total Targets Assessed**: {len(targets)}
 - **Total Findings**: {len(findings)}
-- **Critical Risk Findings**: {sum(1 for f in findings if f.get('severity') == 'critical')}
-- **High Risk Findings**: {sum(1 for f in findings if f.get('severity') == 'high')}
+- **Critical Risk Findings**: {sum(1 for f in findings if enum_value(f.get('severity')) == 'critical')}
+- **High Risk Findings**: {sum(1 for f in findings if enum_value(f.get('severity')) == 'high')}
 
 ---
 
@@ -46,7 +50,7 @@ class MarkdownReportGenerator:
         for idx, f in enumerate(findings, 1):
             md_content += f"""### Finding #{idx}: {markdown_safe(f['title'])}
 
-- **Severity**: {markdown_safe(str(f['severity']).upper())}
+- **Severity**: {markdown_safe(str(enum_value(f['severity'])).upper())}
 - **Risk Score**: {f['risk_score']}/100
 - **Confidence**: {f['confidence_score']}/100
 - **Status**: {markdown_safe(f['status'])}

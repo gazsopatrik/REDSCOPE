@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 import tempfile
 from pathlib import Path
 from app.reporting.html_report import HTMLReportGenerator
@@ -129,3 +130,28 @@ def test_json_report_omits_sqlalchemy_state() -> None:
         assert "_sa_instance_state" not in Path(temp_path).read_text(encoding="utf-8")
     finally:
         Path(temp_path).unlink(missing_ok=True)
+
+
+class Severity(str, Enum):
+    HIGH = "high"
+
+
+class Status(str, Enum):
+    CANDIDATE = "candidate"
+
+
+def test_report_generators_render_enum_values(tmp_path) -> None:
+    data = get_mock_report_data()
+    data["findings"][0]["severity"] = Severity.HIGH
+    data["findings"][0]["status"] = Status.CANDIDATE
+    html_path = tmp_path / "report.html"
+    md_path = tmp_path / "report.md"
+    HTMLReportGenerator.generate_html_report(data, str(html_path))
+    MarkdownReportGenerator.generate_markdown_report(data, str(md_path))
+    html = html_path.read_text(encoding="utf-8")
+    markdown = md_path.read_text(encoding="utf-8")
+    assert "badge-high" in html
+    assert "Severity.HIGH" not in html + markdown
+    assert "Status.CANDIDATE" not in html + markdown
+    assert "Critical Risk Findings**: 0" in markdown
+    assert "High Risk Findings**: 1" in markdown
