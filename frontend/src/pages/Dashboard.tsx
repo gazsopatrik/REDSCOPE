@@ -75,7 +75,7 @@ export const Dashboard: React.FC = () => {
               <CheckCircle size={16} color="var(--accent-green)" />
               <strong style={{ fontSize: '0.95rem' }}>Backend API Status</strong>
             </div>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>FastAPI Engine Online (v0.1.0)</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{isLoading ? 'Checking API…' : isError ? 'API status unavailable' : 'FastAPI Engine Online (v0.1.0)'}</span>
           </div>
 
           <div style={{ padding: '1rem', background: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
