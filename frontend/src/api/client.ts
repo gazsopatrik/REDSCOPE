@@ -6,6 +6,15 @@ const api = axios.create({
 });
 
 export const getProjects = async (): Promise<Project[]> => (await api.get('/projects')).data;
+export const getAllProjects = async (): Promise<Project[]> => {
+  const projects: Project[] = [];
+  const pageSize = 100;
+  for (let skip = 0; ; skip += pageSize) {
+    const page: Project[] = (await api.get('/projects', { params: { skip, limit: pageSize } })).data;
+    projects.push(...page);
+    if (page.length < pageSize) return projects;
+  }
+};
 export const getProject = async (id: string): Promise<Project> => (await api.get(`/projects/${id}`)).data;
 export const createProject = async (data: Partial<Project>): Promise<Project> => (await api.post('/projects', data)).data;
 export const updateProject = async (id: string, data: Partial<Project>): Promise<Project> => (await api.patch(`/projects/${id}`, data)).data;

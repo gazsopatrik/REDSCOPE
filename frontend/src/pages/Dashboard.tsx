@@ -1,7 +1,26 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { getAllProjects, getAllTargets, getFindings, getScans } from '../api/client';
 import { Shield, Target, Activity, AlertTriangle, CheckCircle, FileText } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
+  const { data: metrics, isLoading, isError, refetch } = useQuery({
+    queryKey: ['dashboard-metrics'],
+    queryFn: async () => {
+      const [projects, targets] = await Promise.all([getAllProjects(), getAllTargets()]);
+      const perProject = await Promise.all(projects.map(async (project) => {
+        const [scans, findings] = await Promise.all([getScans(project.id), getFindings(project.id)]);
+        return { scans: scans.length, critical: findings.filter((finding) => finding.severity === 'critical').length };
+      }));
+      return {
+        activeProjects: projects.filter((project) => project.status === 'active').length,
+        scopedTargets: targets.filter((target) => target.scope_status === 'allowed').length,
+        totalScans: perProject.reduce((sum, item) => sum + item.scans, 0),
+        criticalFindings: perProject.reduce((sum, item) => sum + item.critical, 0),
+      };
+    },
+  });
+  const value = (count: number | undefined) => isLoading ? '…' : isError ? '—' : count ?? 0;
   return (
     <div className="page-container">
       <div style={{ marginBottom: '2rem' }}>
@@ -13,13 +32,14 @@ export const Dashboard: React.FC = () => {
         </p>
       </div>
 
+      {isError && <div role="alert" style={{ color: 'var(--accent-red)', marginBottom: '1rem' }}>Could not load dashboard metrics. <button type="button" onClick={() => void refetch()}>Retry</button></div>}
       <div className="grid-metrics">
         <div className="stat-card">
           <div className="stat-header">
             <span>Active Projects</span>
             <Shield size={18} color="var(--accent-blue)" />
           </div>
-          <div className="stat-value">1</div>
+          <div className="stat-value">{value(metrics?.activeProjects)}</div>
         </div>
 
         <div className="stat-card">
@@ -27,7 +47,7 @@ export const Dashboard: React.FC = () => {
             <span>Scoped Targets</span>
             <Target size={18} color="var(--accent-purple)" />
           </div>
-          <div className="stat-value">2</div>
+          <div className="stat-value">{value(metrics?.scopedTargets)}</div>
         </div>
 
         <div className="stat-card">
@@ -35,7 +55,7 @@ export const Dashboard: React.FC = () => {
             <span>Total Scans</span>
             <Activity size={18} color="var(--accent-green)" />
           </div>
-          <div className="stat-value">0</div>
+          <div className="stat-value">{value(metrics?.totalScans)}</div>
         </div>
 
         <div className="stat-card">
@@ -43,7 +63,7 @@ export const Dashboard: React.FC = () => {
             <span>Critical Findings</span>
             <AlertTriangle size={18} color="var(--accent-red)" />
           </div>
-          <div className="stat-value" style={{ color: 'var(--accent-red)' }}>0</div>
+          <div className="stat-value" style={{ color: 'var(--accent-red)' }}>{value(metrics?.criticalFindings)}</div>
         </div>
       </div>
 
