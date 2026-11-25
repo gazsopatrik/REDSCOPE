@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Download, FileCode, FileSpreadsheet, FileText } from 'lucide-react';
 import {
   createReport,
-  getProjects,
+  getAllProjects,
   getReportDownloadUrl,
   getReports,
   Report,
@@ -16,7 +16,7 @@ export const ReportsPage: React.FC = () => {
 
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError, error: projectsFetchError, refetch: refetchProjects } = useQuery<Project[]>({
     queryKey: ['projects'],
-    queryFn: getProjects,
+    queryFn: getAllProjects,
   });
 
   const activeProjectId = selectedProjectId || (projects[0]?.id ?? '');

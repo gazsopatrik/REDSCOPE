@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Shield, CheckCircle, Target, X, Trash2, RefreshCw, Layers } from 'lucide-react';
-import { getProjects, createProject, getScopes, createScope, deleteScope, getTargets, createTarget, validateTargetScope } from '../api/client';
+import { getAllProjects, createProject, getScopes, createScope, deleteScope, getTargets, createTarget, validateTargetScope } from '../api/client';
 import { Project, Scope, Target as TargetType } from '../types';
 
 export const ProjectsPage: React.FC = () => {
@@ -25,7 +25,7 @@ export const ProjectsPage: React.FC = () => {
 
   const { data: projects = [], isLoading, isError: projectsError, refetch: retryProjects } = useQuery<Project[]>({
     queryKey: ['projects'],
-    queryFn: getProjects,
+    queryFn: getAllProjects,
   });
 
   // Queries for selected project scopes & targets
