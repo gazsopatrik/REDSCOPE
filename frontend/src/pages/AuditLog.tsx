@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { User } from 'lucide-react';
-import { getProjects, getAuditLogs } from '../api/client';
+import { getAllProjects, getAuditLogs } from '../api/client';
 import { Project, AuditLog } from '../types';
 
 export const AuditLogPage: React.FC = () => {
@@ -9,7 +9,7 @@ export const AuditLogPage: React.FC = () => {
 
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError, refetch: retryProjects } = useQuery<Project[]>({
     queryKey: ['projects'],
-    queryFn: getProjects,
+    queryFn: getAllProjects,
   });
 
   const activeProjectId = selectedProjectId || (projects[0]?.id ?? '');

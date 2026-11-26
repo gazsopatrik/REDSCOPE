@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Target as TargetIcon, Plus, RefreshCw, AlertCircle, Shield } from 'lucide-react';
-import { getProjects, getAllTargets, createTarget, validateTargetScope } from '../api/client';
+import { getAllProjects, getAllTargets, createTarget, validateTargetScope } from '../api/client';
 import { Project, Target as TargetType } from '../types';
 
 export const TargetsPage: React.FC = () => {
@@ -14,7 +14,7 @@ export const TargetsPage: React.FC = () => {
 
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['projects'],
-    queryFn: getProjects,
+    queryFn: getAllProjects,
   });
 
   const { data: allTargets = [], isLoading, isError, refetch } = useQuery<TargetType[]>({
