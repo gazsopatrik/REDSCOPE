@@ -4,6 +4,13 @@ import { Activity, Play, Shield, Terminal, AlertCircle } from 'lucide-react';
 import { getAllProjects, getTargets, getScans, createScan } from '../api/client';
 import { Project, Target, Scan } from '../types';
 
+const scanStatusColor = (status: Scan['status']) => {
+  if (status === 'completed') return { background: 'rgba(16,185,129,0.15)', color: 'var(--accent-green)' };
+  if (status === 'queued' || status === 'running') return { background: 'rgba(59,130,246,0.15)', color: 'var(--accent-blue)' };
+  if (status === 'parsing' || status === 'analyzing') return { background: 'rgba(245,158,11,0.15)', color: '#f59e0b' };
+  return { background: 'rgba(239,68,68,0.15)', color: 'var(--accent-red)' };
+};
+
 export const ScansPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -147,11 +154,11 @@ export const ScansPage: React.FC = () => {
                   <td><code>{s.target_id.slice(0, 8)}...</code></td>
                   <td>
                     <code style={{ fontSize: '0.75rem', background: '#0b0f19', padding: '0.25rem 0.5rem', borderRadius: '4px', color: 'var(--accent-green)' }}>
-                      {s.command_preview || 'nmap -sV [target]'}
+                      {s.command_preview || 'No command preview available'}
                     </code>
                   </td>
                   <td>
-                    <span className="badge" style={{ background: s.status === 'completed' ? 'rgba(16,185,129,0.15)' : s.status === 'running' ? 'rgba(59,130,246,0.15)' : s.status === 'parsing' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)', color: s.status === 'completed' ? 'var(--accent-green)' : s.status === 'running' ? 'var(--accent-blue)' : s.status === 'parsing' ? '#f59e0b' : 'var(--accent-red)' }}>
+                    <span className="badge" style={scanStatusColor(s.status)}>
                       {s.status.toUpperCase()}
                     </span>
                   </td>
