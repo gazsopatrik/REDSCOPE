@@ -53,8 +53,9 @@ export const FindingsPage: React.FC = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Filter size={16} color="var(--text-secondary)" />
-          <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Severity:</label>
+          <label htmlFor="findings-severity" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Severity:</label>
           <select
+            id="findings-severity"
             value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
             style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: '#fff' }}
@@ -64,6 +65,7 @@ export const FindingsPage: React.FC = () => {
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
+            <option value="informational">Informational</option>
           </select>
         </div>
       </div>
