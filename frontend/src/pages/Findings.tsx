@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, ShieldAlert, CheckCircle, ExternalLink, Filter } from 'lucide-react';
+import { CheckCircle, Filter } from 'lucide-react';
 import { getAllProjects, getFindings } from '../api/client';
 import { Project, Finding } from '../types';
+import { filterFindings } from '../utils/findings';
 
 export const FindingsPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError, error: projectsFetchError, refetch: refetchProjects } = useQuery<Project[]>({
     queryKey: ['projects'],
@@ -21,9 +23,7 @@ export const FindingsPage: React.FC = () => {
     enabled: !!activeProjectId,
   });
 
-  const filteredFindings = findings.filter((f) =>
-    severityFilter === 'all' ? true : f.severity.toLowerCase() === severityFilter.toLowerCase()
-  );
+  const filteredFindings = filterFindings(findings, severityFilter, searchQuery);
 
   return (
     <div className="page-container">
@@ -67,6 +67,20 @@ export const FindingsPage: React.FC = () => {
             <option value="low">Low</option>
             <option value="informational">Informational</option>
           </select>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <label htmlFor="findings-search" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Search:</label>
+          <input
+            id="findings-search"
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Title, description or remediation"
+            style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: '#fff', maxWidth: '100%', boxSizing: 'border-box' }}
+          />
+          {(searchQuery || severityFilter !== 'all') && (
+            <button type="button" onClick={() => { setSearchQuery(''); setSeverityFilter('all'); }}>Clear filters</button>
+          )}
         </div>
       </div>
 
