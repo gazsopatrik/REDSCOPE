@@ -71,6 +71,12 @@ HTML_TEMPLATE_STR = """<!DOCTYPE html>
                     <td>{{ f.title }}</td>
                     <td>{{ f.status }}</td>
                 </tr>
+                <tr>
+                    <td colspan="4">
+                        <strong>Description:</strong> {{ f.description or 'N/A' }}<br>
+                        <strong>Remediation:</strong> {{ f.remediation or 'N/A' }}
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>

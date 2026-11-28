@@ -43,6 +43,8 @@ def test_html_report_generator() -> None:
         content = Path(out).read_text(encoding="utf-8")
         assert "Acme Security Audit" in content
         assert "CVE-2023-44487" in content
+        assert "HTTP/2 DoS vulnerability" in content
+        assert "Update nginx" in content
     finally:
         Path(temp_path).unlink(missing_ok=True)
 
@@ -51,6 +53,8 @@ def test_html_report_escapes_untrusted_values() -> None:
     data = get_mock_report_data()
     data["project"]["name"] = "<script>alert('project')</script>"
     data["findings"][0]["title"] = "<img src=x onerror=alert('finding')>"
+    data["findings"][0]["description"] = "<script>alert('description')</script>"
+    data["findings"][0]["remediation"] = "<img src=x onerror=alert('remediation')>"
     with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as f:
         temp_path = f.name
 
@@ -61,6 +65,8 @@ def test_html_report_escapes_untrusted_values() -> None:
         assert "<img src=x" not in content
         assert "&lt;script&gt;" in content
         assert "&lt;img src=x" in content
+        assert "&lt;script&gt;alert" in content
+        assert content.count("&lt;img src=x") == 2
     finally:
         Path(temp_path).unlink(missing_ok=True)
 
