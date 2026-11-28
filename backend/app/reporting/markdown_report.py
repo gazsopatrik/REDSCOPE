@@ -37,12 +37,14 @@ class MarkdownReportGenerator:
 
 ## 1. Executive Summary
 
-- **Total Targets Assessed**: {len(targets)}
+- **Total Registered Targets**: {len(targets)}
 - **Total Findings**: {len(findings)}
 - **Critical Risk Findings**: {sum(1 for f in findings if enum_value(f.get('severity')) == 'critical')}
 - **High Risk Findings**: {sum(1 for f in findings if enum_value(f.get('severity')) == 'high')}
 
 ---
+
+Registered targets may include unscanned or out-of-scope entries; this count does not indicate assessment coverage.
 
 ## 2. Findings Detail
 

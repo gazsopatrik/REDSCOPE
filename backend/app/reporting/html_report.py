@@ -51,7 +51,9 @@ HTML_TEMPLATE_STR = """<!DOCTYPE html>
         </div>
 
         <h2>Executive Summary</h2>
-        <p>Total Scoped Targets: <strong>{{ targets | length }}</strong> | Total Findings Discovered: <strong>{{ findings | length }}</strong></p>
+        <p>Total Registered Targets: <strong>{{ targets | length }}</strong> | Total Findings Discovered: <strong>{{ findings | length }}</strong></p>
+
+        <p>Registered targets may include unscanned or out-of-scope entries; this count does not indicate assessment coverage.</p>
 
         <h2>Discovered Findings</h2>
         <table>
