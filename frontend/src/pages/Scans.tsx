@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Activity, Play, Shield, Terminal, AlertCircle } from 'lucide-react';
+import { Activity, Play, Shield, AlertCircle } from 'lucide-react';
 import { getAllProjects, getTargets, getScans, createScan } from '../api/client';
 import { Project, Target, Scan } from '../types';
 

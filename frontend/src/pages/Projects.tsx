@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Shield, CheckCircle, Target, X, Trash2, RefreshCw, Layers } from 'lucide-react';
+import { Plus, Shield, X, Trash2, RefreshCw, Layers } from 'lucide-react';
 import { getAllProjects, createProject, getScopes, createScope, deleteScope, getTargets, createTarget, validateTargetScope } from '../api/client';
 import { Project, Scope, Target as TargetType } from '../types';
 

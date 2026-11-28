@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Project, Scope, Target, Scan, Finding, Validation, AuditLog, ReportFormat } from '../types';
+import { Project, Scope, Target, Scan, Finding, AuditLog, ReportFormat } from '../types';
 
 const api = axios.create({
   baseURL: '/api',

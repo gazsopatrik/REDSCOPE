@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings as SettingsIcon, Shield, Server, Terminal, Lock } from 'lucide-react';
+import { Server, Terminal } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   return (
